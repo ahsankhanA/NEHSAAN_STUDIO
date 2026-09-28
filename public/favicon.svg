@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="hangerBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#181615" />
+      <stop offset="50%" stop-color="#100e0d" />
+      <stop offset="100%" stop-color="#080706" />
+    </linearGradient>
+
+    <!-- Metallic Haute Couture Gold Gradient -->
+    <linearGradient id="hangerGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FBF0B9" />
+      <stop offset="25%" stop-color="#DFB76C" />
+      <stop offset="50%" stop-color="#F3DC9B" />
+      <stop offset="75%" stop-color="#C5A059" />
+      <stop offset="100%" stop-color="#9E782F" />
+    </linearGradient>
+  </defs>
+
+  <!-- Luxury Obsidian Rounded Squircle Base -->
+  <rect width="128" height="128" rx="28" fill="url(#hangerBg)" />
+  <rect x="7" y="7" width="114" height="114" rx="22" fill="none" stroke="url(#hangerGold)" stroke-width="1.5" stroke-opacity="0.45" />
+
+  <!-- Vector Clothing Hanger Logo -->
+  <g fill="none" stroke="url(#hangerGold)" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Hanger Hook -->
+    <!-- Hook Tip ball -->
+    <circle cx="72" cy="27" r="2.5" fill="url(#hangerGold)" stroke="none" />
+    
+    <!-- Hook Swirl -->
+    <path
+      d="M 72 28 C 72 23 68 18 61 18 C 53 18 48 24 48 32 C 48 41 57 45 64 50 L 64 54"
+      stroke-width="4.5"
+    />
+
+    <!-- Hanger Neck & Swivel Ring -->
+    <circle cx="64" cy="56" r="3" fill="url(#hangerGold)" stroke="none" />
+
+    <!-- Hanger Main Body Contour (Shoulders & Trouser Bar) -->
+    <path
+      d="M 64 57 L 22 84 C 18 86.5 19 92 24 92 L 104 92 C 109 92 110 86.5 106 84 Z"
+      stroke-width="4.5"
+      stroke-linejoin="round"
+    />
+
+    <!-- Interior Trouser Bar Reinforcement / Garment Notch Bar -->
+    <line x1="27" y1="87" x2="101" y2="87" stroke-width="2" stroke-opacity="0.75" />
+
+    <!-- Center Accent Star -->
+    <path
+      d="M 64 71 L 65.5 75 L 69.5 76.5 L 65.5 78 L 64 82 L 62.5 78 L 58.5 76.5 L 62.5 75 Z"
+      fill="url(#hangerGold)"
+      stroke="none"
+    />
+  </g>
+</svg>

@@ -1,0 +1,6 @@
+{
+  "name": "NEHSAAN Clothing & Reseller Platform",
+  "description": "Exclusive Pakistani clothing e-commerce storefront and reseller management platform with real-time attribution, commissions, and order management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

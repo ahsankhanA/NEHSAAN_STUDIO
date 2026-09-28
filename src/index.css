@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  --font-brand: "Cinzel", "Playfair Display", Georgia, serif;
+}
+
+/* Universal box-sizing and horizontal scroll lock to prevent mobile overflow */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
+}
+
+/* Native smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+  }
+  h1, h2, h3, .font-serif {
+    font-family: var(--font-serif);
+  }
+  .font-brand {
+    font-family: var(--font-brand);
+    letter-spacing: 0.15em;
+  }
+}
+
+/* Hide default cursor on desktop when custom cursor is active, but never on touch */
+@media (hover: hover) and (pointer: fine) {
+  .fashion-cursor-enabled body,
+  .fashion-cursor-enabled a,
+  .fashion-cursor-enabled button {
+    cursor: default;
+  }
+}
+
