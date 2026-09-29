@@ -10,6 +10,7 @@ import {
   ResellerModel,
   SupplierModel,
   SettingsModel,
+  CustomerModel,
 } from '../models/index.js';
 import type {
   IUser,
@@ -158,31 +159,26 @@ class MemoryDataStore {
     try {
       if (mongoose.connection.readyState !== 1) return false;
 
-      let loadedSomething = false;
-
       // 1. Direct restore from individual ProductModel collection
       try {
         const cloudProducts = await ProductModel.find({}).lean();
-        if (cloudProducts && cloudProducts.length > 0) {
-          const isClothingProduct = (p: any) => {
-            const id = String(p._id || '').toLowerCase();
-            const name = String(p.name || '').toLowerCase();
-            const cat = String(p.category || '').toLowerCase();
-            if (id.startsWith('prod_crispy') || id.startsWith('prod_animal') || id.startsWith('prod_belgian')) return false;
-            if (name.includes('broast') || name.includes('fries') || name.includes('shake') || name.includes('burger')) return false;
-            if (cat.includes('chicken') || cat.includes('fries') || cat.includes('shake') || cat.includes('beverage') || cat.includes('food')) return false;
-            return true;
-          };
+        const isClothingProduct = (p: any) => {
+          const id = String(p._id || '').toLowerCase();
+          const name = String(p.name || '').toLowerCase();
+          const cat = String(p.category || '').toLowerCase();
+          if (id.startsWith('prod_crispy') || id.startsWith('prod_animal') || id.startsWith('prod_belgian')) return false;
+          if (name.includes('broast') || name.includes('fries') || name.includes('shake') || name.includes('burger')) return false;
+          if (cat.includes('chicken') || cat.includes('fries') || cat.includes('shake') || cat.includes('beverage') || cat.includes('food')) return false;
+          return true;
+        };
 
-          const validClothing = cloudProducts.filter(isClothingProduct);
-          console.log(`[Store] Restored ${validClothing.length} clothing products directly from MongoDB Atlas products collection!`);
-          this.products = validClothing.map((p: any) => ({
-            ...p,
-            _id: String(p._id),
-            sizes: p.subcategory && p.subcategory.toLowerCase() === 'unstitched' ? ['Unstitched'] : (p.sizes || []),
-          }));
-          loadedSomething = true;
-        }
+        const validClothing = (cloudProducts || []).filter(isClothingProduct);
+        console.log(`[Store] Synced ${validClothing.length} products directly from MongoDB Atlas products collection.`);
+        this.products = validClothing.map((p: any) => ({
+          ...p,
+          _id: String(p._id),
+          sizes: p.subcategory && p.subcategory.toLowerCase() === 'unstitched' ? ['Unstitched'] : (p.sizes || []),
+        }));
       } catch (e) {
         console.warn('[Store] Could not read ProductModel collection:', (e as Error).message);
       }
@@ -190,11 +186,8 @@ class MemoryDataStore {
       // 2. Direct restore from OrderModel collection
       try {
         const cloudOrders = await OrderModel.find({}).lean();
-        if (cloudOrders && cloudOrders.length > 0) {
-          console.log(`[Store] Restored ${cloudOrders.length} orders from MongoDB Atlas orders collection!`);
-          this.orders = cloudOrders.map((o: any) => ({ ...o, _id: String(o._id) }));
-          loadedSomething = true;
-        }
+        this.orders = (cloudOrders || []).map((o: any) => ({ ...o, _id: String(o._id) }));
+        console.log(`[Store] Synced ${this.orders.length} orders from MongoDB Atlas orders collection.`);
       } catch (e) {
         console.warn('[Store] Could not read OrderModel collection:', (e as Error).message);
       }
@@ -202,11 +195,8 @@ class MemoryDataStore {
       // 3. Direct restore from ResellerModel collection
       try {
         const cloudResellers = await ResellerModel.find({}).lean();
-        if (cloudResellers && cloudResellers.length > 0) {
-          console.log(`[Store] Restored ${cloudResellers.length} resellers from MongoDB Atlas resellers collection!`);
-          this.resellers = cloudResellers.map((r: any) => ({ ...r, _id: String(r._id) }));
-          loadedSomething = true;
-        }
+        this.resellers = (cloudResellers || []).map((r: any) => ({ ...r, _id: String(r._id) }));
+        console.log(`[Store] Synced ${this.resellers.length} resellers from MongoDB Atlas resellers collection.`);
       } catch (e) {
         console.warn('[Store] Could not read ResellerModel collection:', (e as Error).message);
       }
@@ -214,20 +204,17 @@ class MemoryDataStore {
       // 4. Direct restore from UserModel collection
       try {
         const cloudUsers = await UserModel.find({}).lean();
-        if (cloudUsers && cloudUsers.length > 0) {
-          console.log(`[Store] Restored ${cloudUsers.length} users from MongoDB Atlas users collection!`);
-          const userMap = new Map(this.users.map((u) => [u.email.toLowerCase(), u]));
-          for (const u of cloudUsers) {
-            userMap.set(u.email.toLowerCase(), { ...u, _id: String(u._id) } as any);
-          }
-          this.users = Array.from(userMap.values());
-          loadedSomething = true;
+        const userMap = new Map(this.users.map((u) => [u.email.toLowerCase(), u]));
+        for (const u of (cloudUsers || [])) {
+          userMap.set(u.email.toLowerCase(), { ...u, _id: String(u._id) } as any);
         }
+        this.users = Array.from(userMap.values());
+        console.log(`[Store] Synced ${this.users.length} users from MongoDB Atlas users collection.`);
       } catch (e) {
         console.warn('[Store] Could not read UserModel collection:', (e as Error).message);
       }
 
-      // 5. Restore settings, categories, heroSlides, boutiques from snapshot
+      // 5. Restore settings, categories, heroSlides, boutiques from snapshot (NEVER products)
       try {
         const snapshot = await SystemSnapshotModel.findOne({ key: 'main_snapshot' }).lean();
         if (snapshot && (snapshot as any).data) {
@@ -238,23 +225,20 @@ class MemoryDataStore {
           if (snapData.heroSlides && snapData.heroSlides.length > 0) this.heroSlides = snapData.heroSlides;
           if (snapData.coupons && snapData.coupons.length > 0) this.coupons = snapData.coupons;
           if (snapData.suppliers && snapData.suppliers.length > 0) this.suppliers = snapData.suppliers;
-          loadedSomething = true;
         }
       } catch (e) {
         console.warn('[Store] Could not read SystemSnapshotModel:', (e as Error).message);
       }
 
-      if (loadedSomething) {
-        console.log(`[Store] MongoDB Cloud Sync COMPLETE: ${this.products.length} Products, ${this.orders.length} Orders, ${this.resellers.length} Resellers.`);
-        // Cache to local disk for fast offline fallback
-        try {
-          fs.writeFileSync(this.storageFile, JSON.stringify(this.exportBackup(), null, 2), 'utf-8');
-        } catch {}
-      }
+      console.log(`[Store] MongoDB Cloud Sync COMPLETE: ${this.products.length} Products, ${this.orders.length} Orders, ${this.resellers.length} Resellers.`);
+      // Cache to local disk for fast offline fallback
+      try {
+        fs.writeFileSync(this.storageFile, JSON.stringify(this.exportBackup(), null, 2), 'utf-8');
+      } catch {}
 
-      return loadedSomething;
+      return true;
     } catch (err) {
-      console.warn('[Store] Could not load cloud snapshot:', (err as Error).message);
+      console.warn('[Store] Cloud database sync error:', (err as Error).message);
       return false;
     }
   }
@@ -547,23 +531,48 @@ class MemoryDataStore {
           });
         }
 
-        // Metadata Snapshot (settings, categories, hero slides)
+        // Direct users persistence (ensures Super Admin and Resellers are never lost)
+        if (this.users && this.users.length > 0) {
+          const bulkUsers = this.users.map((u) => ({
+            updateOne: {
+              filter: { email: u.email.toLowerCase() },
+              update: { $set: u },
+              upsert: true,
+            },
+          }));
+          UserModel.bulkWrite(bulkUsers).catch((err) => {
+            console.warn('[MongoDB] User bulk sync warning:', (err as Error).message);
+          });
+        }
+
+        // Direct customers persistence
+        if (this.customers && this.customers.length > 0) {
+          const bulkCustomers = this.customers.map((c) => ({
+            updateOne: {
+              filter: { phone: c.phone },
+              update: { $set: c },
+              upsert: true,
+            },
+          }));
+          CustomerModel.bulkWrite(bulkCustomers).catch((err: any) => {
+            console.warn('[MongoDB] Customer bulk sync warning:', (err as Error).message);
+          });
+        }
+
+        // Metadata Snapshot (settings, categories, hero slides, boutiques - NEVER products)
+        const metadataOnly = {
+          settings: this.settings,
+          categories: this.categories,
+          boutiques: this.boutiques,
+          heroSlides: this.heroSlides,
+          coupons: this.coupons,
+          suppliers: this.suppliers,
+        };
         SystemSnapshotModel.findOneAndUpdate(
           { key: 'main_snapshot' },
-          { key: 'main_snapshot', data, lastSavedAt: new Date().toISOString() },
+          { key: 'main_snapshot', data: metadataOnly, lastSavedAt: new Date().toISOString() },
           { upsert: true }
-        ).catch((err) => {
-          // If full snapshot exceeds 16MB because of images, save metadata without heavy arrays
-          const lightweightData = {
-            ...data,
-            products: data.products?.map((p: any) => ({ ...p, images: p.images?.slice(0, 1) || [] })),
-          };
-          SystemSnapshotModel.findOneAndUpdate(
-            { key: 'main_snapshot' },
-            { key: 'main_snapshot', data: lightweightData, lastSavedAt: new Date().toISOString() },
-            { upsert: true }
-          ).catch(() => {});
-        });
+        ).catch(() => {});
       }
     } catch (e) {
       // Ignore disk write errors if read-only

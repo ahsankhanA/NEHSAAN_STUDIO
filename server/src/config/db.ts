@@ -34,12 +34,8 @@ export async function connectDB(): Promise<void> {
       dbStatus.lastError = undefined;
       dbStatus.errorDetail = undefined;
       console.log(`[DB] Connected successfully to MongoDB Atlas cluster: ${mongoose.connection.host} [database: ${mongoose.connection.db?.databaseName}]`);
-      // Automatically load snapshot & collections from cloud MongoDB so server restarts never lose data
-      const loadedSomething = await store.loadFromCloudDatabase();
-      if (!loadedSomething && store.products.length > 0) {
-        console.log('[DB] Cloud database is newly linked. Initializing MongoDB Atlas cluster with active store data...');
-        await store.syncToCloudDatabase();
-      }
+      // Automatically load state from MongoDB Atlas so it is the single source of truth
+      await store.loadFromCloudDatabase();
       return;
     } catch (err) {
       const errMsg = (err as Error).message;

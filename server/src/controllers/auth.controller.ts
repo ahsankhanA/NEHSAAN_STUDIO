@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { ENV } from '../config/env.js';
 import { store } from '../db/store.js';
+import { UserModel, ResellerModel } from '../models/index.js';
 import { AuditService } from '../services/audit.service.js';
 import type { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import type { IUser, IReseller } from '../../src/types/index.js';
@@ -266,6 +267,13 @@ export class AuthController {
 
     store.users.push(user);
     store.resellers.push(reseller);
+
+    try {
+      await UserModel.updateOne({ email: cleanEmail }, { $set: user }, { upsert: true });
+      await ResellerModel.updateOne({ _id: resellerId }, { $set: reseller }, { upsert: true });
+    } catch (e) {
+      console.warn('[AuthController] Direct MongoDB write notice:', (e as Error).message);
+    }
 
     // Notify Super Admin of new applicant
     store.notifications.push({

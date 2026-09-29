@@ -18,7 +18,7 @@ async function startServer() {
   app.use(express.json({ limit: '15mb' }));
   app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
-  // Initialize resilient database connection and seed initial data safely without wiping existing data
+  // Connect to MongoDB Atlas (cloud database is the single source of truth) and verify Super Admin account
   await connectDatabase();
   await seedInitialData(false);
 

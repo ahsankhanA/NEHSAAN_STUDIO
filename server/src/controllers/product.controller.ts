@@ -254,13 +254,12 @@ export class ProductController {
     };
 
     store.products.unshift(newProduct);
-    store.saveToDisk();
-
     try {
       await ProductModel.updateOne({ _id: newProduct._id }, { $set: newProduct }, { upsert: true });
     } catch (dbErr) {
       console.warn('[ProductController] Direct MongoDB sync notice:', (dbErr as Error).message);
     }
+    store.saveToDisk();
 
     AuditService.log({
       actorId: req.user!._id,
@@ -352,8 +351,12 @@ export class ProductController {
     }
 
     const [removed] = store.products.splice(index, 1);
+    try {
+      await ProductModel.deleteOne({ _id: id });
+    } catch (e) {
+      console.warn('[ProductController] Direct MongoDB delete notice:', (e as Error).message);
+    }
     store.saveToDisk();
-    ProductModel.deleteOne({ _id: id }).catch(() => {});
 
     AuditService.log({
       actorId: req.user!._id,

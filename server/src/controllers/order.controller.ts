@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { store } from '../db/store.js';
+import { OrderModel, CustomerModel } from '../models/index.js';
 import { CommissionService } from '../services/commission.service.js';
 import { WhatsAppService } from '../services/whatsapp.service.js';
 import { PostExService } from '../services/postex.service.js';
@@ -290,6 +291,15 @@ export class OrderController {
 
     // 9. Dispatch WhatsApp order notification asynchronously
     const whatsappResult = await WhatsAppService.dispatchOrderNotification(newOrder, attributedReseller);
+
+    try {
+      await OrderModel.updateOne({ _id: newOrder._id }, { $set: newOrder }, { upsert: true });
+      if (customerDoc) {
+        await CustomerModel.updateOne({ phone: newOrder.customer.phone }, { $set: customerDoc }, { upsert: true });
+      }
+    } catch (e) {
+      console.warn('[OrderController] Direct MongoDB write notice:', (e as Error).message);
+    }
 
     store.saveToDisk();
 
