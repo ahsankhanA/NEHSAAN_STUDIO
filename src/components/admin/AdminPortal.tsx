@@ -218,41 +218,7 @@ export const AdminPortal: React.FC = () => {
       if (Array.isArray(heroData)) setHeroSlides(heroData);
       if (sysStatus) setDbSystemStatus(sysStatus);
 
-      // Automated Anti-Reset Self-Healing Shield:
-      // If server was restarted with empty/default items, auto-restore silently from local mirror!
-      try {
-        const mirrorStr = localStorage.getItem('nehsaan_browser_backup_mirror');
-        if (mirrorStr) {
-          const mirror = JSON.parse(mirrorStr);
-          const mirrorResellers = Array.isArray(mirror.resellers) ? mirror.resellers.length : 0;
-          const mirrorProducts = Array.isArray(mirror.products) ? mirror.products.length : 0;
-          const currentResellers = (resData.resellers || []).length;
-          const currentProducts = (prodData.products || []).length;
-
-          if ((mirrorResellers > 0 && currentResellers === 0) || (mirrorProducts > currentProducts)) {
-            console.log('[Auto-Recovery] Fresh server restart detected. Auto-restoring from browser cloud snapshot...');
-            const autoRes = await api.autoRestoreDatabase(mirror);
-            if (autoRes.restored) {
-              showNotification(
-                `🛡️ Automatic Anti-Reset Shield: Server restart detected! Restored ${autoRes.counts?.products || mirrorProducts} products and ${autoRes.counts?.resellers || mirrorResellers} resellers automatically.`,
-                'success'
-              );
-              const [reProd, reRes, reHero, reBout] = await Promise.all([
-                api.getAdminProducts(),
-                api.getAdminResellers(),
-                api.getHeroSlides().catch(() => []),
-                api.getBoutiques().catch(() => []),
-              ]);
-              if (reProd.products) setProducts(reProd.products);
-              if (reRes.resellers) setResellers(reRes.resellers);
-              if (Array.isArray(reHero)) setHeroSlides(reHero);
-              if (Array.isArray(reBout)) setBoutiques(reBout);
-            }
-          }
-        }
-      } catch (recoveryErr) {
-        console.warn('Auto recovery check error:', recoveryErr);
-      }
+      // MongoDB Atlas is the single source of truth. No automatic resurrection of products from local cache.
 
       // Live mirror snapshot for automatic disaster recovery
       try {

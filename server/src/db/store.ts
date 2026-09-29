@@ -1,5 +1,3 @@
-import fs from 'fs';
-import path from 'path';
 import crypto from 'crypto';
 import mongoose from 'mongoose';
 import {
@@ -76,82 +74,18 @@ class MemoryDataStore {
   public boutiques: IBoutique[] = [];
   public heroSlides: IHeroSlide[] = [];
 
-  private storageFile: string;
-  private backupFile: string;
-  private tmpFallbackFile: string = '/tmp/.nivora_datastore.json';
-
   constructor() {
-    const customDir = process.env.DATA_DIR || process.env.RENDER_DISK_PATH || process.env.PERSISTENT_DATA_DIR;
-    if (customDir && fs.existsSync(customDir)) {
-      this.storageFile = path.resolve(customDir, '.nivora_datastore.json');
-      this.backupFile = path.resolve(customDir, '.nivora_datastore.backup.json');
-    } else {
-      this.storageFile = path.resolve(process.cwd(), '.nivora_datastore.json');
-      this.backupFile = path.resolve(process.cwd(), '.nivora_datastore.backup.json');
-    }
-    this.loadFromDisk();
-  }
-
-  private loadFromDisk() {
-    let sourceFile = this.storageFile;
-    if (!fs.existsSync(sourceFile) && fs.existsSync(this.backupFile)) {
-      sourceFile = this.backupFile;
-    } else if (!fs.existsSync(sourceFile) && fs.existsSync(this.tmpFallbackFile)) {
-      sourceFile = this.tmpFallbackFile;
-    }
-
-    try {
-      if (fs.existsSync(sourceFile)) {
-        const raw = fs.readFileSync(sourceFile, 'utf-8');
-        const parsed = JSON.parse(raw);
-        this.users = parsed.users || [];
-        this.resellers = parsed.resellers || [];
-        this.products = (parsed.products || []).map((p: IProduct) => {
-          if (p.subcategory && p.subcategory.toLowerCase() === 'unstitched') {
-            return { ...p, sizes: ['Unstitched'] };
-          }
-          return p;
-        });
-        this.suppliers = parsed.suppliers || [];
-        this.orders = parsed.orders || [];
-        this.commissions = parsed.commissions || [];
-        this.bonuses = parsed.bonuses || [];
-        this.payouts = parsed.payouts || [];
-        this.customers = parsed.customers || [];
-        this.returns = parsed.returns || [];
-        this.exchanges = parsed.exchanges || [];
-        this.coupons = parsed.coupons || [];
-        this.settings = parsed.settings || null;
-        this.auditLogs = parsed.auditLogs || [];
-        this.notifications = parsed.notifications || [];
-        this.reviews = parsed.reviews || this.getDefaultReviews();
-        this.abandonedCarts = parsed.abandonedCarts || [];
-        this.boutiques = parsed.boutiques && parsed.boutiques.length > 0 ? parsed.boutiques : this.getDefaultBoutiques();
-        this.heroSlides = parsed.heroSlides && parsed.heroSlides.length > 0 ? parsed.heroSlides : this.getDefaultHeroSlides();
-        
-        // Merge default categories with stored categories so seasonal collections are always present
-        const loadedCats: ICategory[] = parsed.categories || [];
-        const defaults = this.getDefaultCategories();
-        for (const def of defaults) {
-          if (!loadedCats.some((c) => c.slug === def.slug || c.name.toLowerCase() === def.name.toLowerCase())) {
-            loadedCats.push(def);
-          }
-        }
-        this.categories = loadedCats;
-        console.log('[Store] Loaded state from local store cache');
-      } else {
-        this.categories = this.getDefaultCategories();
-        this.reviews = this.getDefaultReviews();
-        this.boutiques = this.getDefaultBoutiques();
-        this.heroSlides = this.getDefaultHeroSlides();
-      }
-    } catch (e) {
-      console.warn('[Store] Could not load state from disk:', (e as Error).message);
-      this.categories = this.getDefaultCategories();
-      this.reviews = this.getDefaultReviews();
-      this.boutiques = this.getDefaultBoutiques();
-      this.heroSlides = this.getDefaultHeroSlides();
-    }
+    this.categories = this.getDefaultCategories();
+    this.boutiques = this.getDefaultBoutiques();
+    this.heroSlides = this.getDefaultHeroSlides();
+    this.reviews = [];
+    this.products = [];
+    this.orders = [];
+    this.resellers = [];
+    this.users = [];
+    this.customers = [];
+    this.suppliers = [];
+    this.coupons = [];
   }
 
   // Automatic Cloud Database Sync on boot or reconnection
@@ -231,11 +165,6 @@ class MemoryDataStore {
       }
 
       console.log(`[Store] MongoDB Cloud Sync COMPLETE: ${this.products.length} Products, ${this.orders.length} Orders, ${this.resellers.length} Resellers.`);
-      // Cache to local disk for fast offline fallback
-      try {
-        fs.writeFileSync(this.storageFile, JSON.stringify(this.exportBackup(), null, 2), 'utf-8');
-      } catch {}
-
       return true;
     } catch (err) {
       console.warn('[Store] Cloud database sync error:', (err as Error).message);
@@ -259,39 +188,7 @@ class MemoryDataStore {
   }
 
   public getDefaultReviews(): IReview[] {
-    const now = new Date().toISOString();
-    return [
-      {
-        _id: 'rev_1',
-        productId: 'prod_1',
-        customerName: 'Ayesha Malik',
-        customerPhone: '03001234567',
-        rating: 5,
-        comment: 'Fabric quality is extraordinary! Pure Swiss lawn with precise embroidery. Exactly as shown in the picture.',
-        isVerifiedBuyer: true,
-        createdAt: now,
-      },
-      {
-        _id: 'rev_2',
-        productId: 'prod_2',
-        customerName: 'Zainab Qureshi',
-        customerPhone: '03217654321',
-        rating: 5,
-        comment: 'Received within 48 hours in Lahore via Express Courier COD. The chiffon dupatta drape is sublime.',
-        isVerifiedBuyer: true,
-        createdAt: now,
-      },
-      {
-        _id: 'rev_3',
-        productId: 'prod_4',
-        customerName: 'Muhammad Hamza',
-        customerPhone: '03339876543',
-        rating: 5,
-        comment: 'Imperial 10-pound Boski is completely authentic. Perfect shine and fall. Will definitely order again.',
-        isVerifiedBuyer: true,
-        createdAt: now,
-      },
-    ];
+    return [];
   }
 
   public getDefaultBoutiques(): IBoutique[] {
@@ -468,20 +365,8 @@ class MemoryDataStore {
         boutiques: this.boutiques,
         heroSlides: this.heroSlides,
       };
-      const jsonStr = JSON.stringify(data, null, 2);
-      fs.writeFileSync(this.storageFile, jsonStr, 'utf-8');
-      try {
-        fs.writeFileSync(this.backupFile, jsonStr, 'utf-8');
-      } catch {
-        // silent secondary write
-      }
-      try {
-        fs.writeFileSync(this.tmpFallbackFile, jsonStr, 'utf-8');
-      } catch {
-        // silent tmp write
-      }
 
-      // AUTOMATIC MONGODB ATLAS CLOUD PERSISTENCE
+      // AUTOMATIC MONGODB ATLAS CLOUD PERSISTENCE (Single Source of Truth)
       if (mongoose.connection.readyState === 1) {
         // Direct individual product persistence (bypassing 16MB document size limit)
         if (this.products && this.products.length > 0) {

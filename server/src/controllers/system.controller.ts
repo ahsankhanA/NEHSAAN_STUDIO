@@ -186,12 +186,8 @@ export class SystemController {
       const serverProductSlugs = new Set(store.products.map((p) => p.slug || p._id));
       const hasUniqueClientProducts = clientProducts.some((p: any) => !serverProductSlugs.has(p.slug || p._id));
 
-      // Only auto-restore if server was restarted with fewer items, missing resellers, unique products, or if forced
-      const shouldRestore =
-        req.query.force === 'true' ||
-        (clientResellersCount > 0 && store.resellers.length === 0) ||
-        (clientProductsCount > store.products.length) ||
-        hasUniqueClientProducts;
+      // Only restore if explicitly forced by authorized Super Admin manual action
+      const shouldRestore = req.query.force === 'true';
 
       if (shouldRestore) {
         const result = store.importBackup(data);
