@@ -77,7 +77,7 @@ export const CartDrawer: React.FC = () => {
                   <img
                     src={item.image || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=300&q=80'}
                     alt={item.name}
-                    className="w-16 h-20 object-cover rounded bg-stone-100 border border-stone-200 shrink-0"
+                    className="w-16 h-20 object-contain p-1 rounded bg-stone-100 border border-stone-200 shrink-0"
                   />
 
                   <div className="flex-1 flex flex-col justify-between">

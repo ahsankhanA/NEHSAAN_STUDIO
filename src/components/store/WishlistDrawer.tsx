@@ -183,11 +183,11 @@ export const WishlistDrawer: React.FC<WishlistDrawerProps> = ({ onSelectProduct 
                     className="group relative flex gap-3 p-3 bg-white border border-stone-200/90 rounded-2xl hover:border-amber-400/60 hover:shadow-md transition-all cursor-pointer"
                   >
                     {/* Thumbnail Image */}
-                    <div className="relative w-20 h-24 bg-stone-100 rounded-xl overflow-hidden shrink-0 border border-stone-100">
+                    <div className="relative w-20 h-24 bg-stone-100/90 rounded-xl overflow-hidden shrink-0 border border-stone-200/80 p-0.5 flex items-center justify-center">
                       <img
                         src={primaryImage}
                         alt={item.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                         loading="lazy"
                       />
                       {isOutOfStock && (
