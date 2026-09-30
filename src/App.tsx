@@ -22,6 +22,7 @@ import { ExchangeRequestView } from './components/store/ExchangeRequestView';
 import { ResellerPortal } from './components/reseller/ResellerPortal';
 import { AdminPortal } from './components/admin/AdminPortal';
 import { LoginModal, ResellerApplyModal } from './components/auth/AuthModals';
+import { ResellerWorkGuideModal } from './components/reseller/ResellerWorkGuideModal';
 import { api } from './services/api';
 import type { IProduct, IOrder, ICategory } from './types';
 import { Filter, Truck, ShieldCheck, Clock } from 'lucide-react';
@@ -55,6 +56,7 @@ const StorefrontContent: React.FC = () => {
   const [showExchangeView, setShowExchangeView] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showApplyModal, setShowApplyModal] = useState(false);
+  const [showResellerGuide, setShowResellerGuide] = useState(false);
 
   // Load categories dynamically
   const fetchCategories = async () => {
@@ -185,6 +187,7 @@ const StorefrontContent: React.FC = () => {
         }}
         onOpenLogin={() => setShowLoginModal(true)}
         onOpenApply={() => setShowApplyModal(true)}
+        onOpenResellerGuide={() => setShowResellerGuide(true)}
         activeCategory={activeCategory}
         onSelectCategory={handleSelectCategory}
         searchQuery={searchQuery}
@@ -201,7 +204,7 @@ const StorefrontContent: React.FC = () => {
         {currentView === 'admin' ? (
           <AdminPortal />
         ) : currentView === 'reseller' ? (
-          <ResellerPortal />
+          <ResellerPortal onOpenGuide={() => setShowResellerGuide(true)} />
         ) : showTrackView ? (
           <TrackOrderView
             initialOrderNumber={trackInitialData.orderNumber}
@@ -348,6 +351,7 @@ const StorefrontContent: React.FC = () => {
         }}
         onOpenApply={() => setShowApplyModal(true)}
         onOpenLogin={() => setShowLoginModal(true)}
+        onOpenResellerGuide={() => setShowResellerGuide(true)}
       />
 
       {/* Global Modals & Drawers */}
@@ -397,6 +401,21 @@ const StorefrontContent: React.FC = () => {
       <ResellerApplyModal
         isOpen={showApplyModal}
         onClose={() => setShowApplyModal(false)}
+        onOpenGuide={() => setShowResellerGuide(true)}
+      />
+
+      {/* Official Reseller Work & Earning System Guide Modal */}
+      <ResellerWorkGuideModal
+        isOpen={showResellerGuide}
+        onClose={() => setShowResellerGuide(false)}
+        onOpenApply={() => {
+          setShowResellerGuide(false);
+          setShowApplyModal(true);
+        }}
+        onOpenLogin={() => {
+          setShowResellerGuide(false);
+          setShowLoginModal(true);
+        }}
       />
 
       {/* Realtime Social Proof Satisfied Customer Popup (Bottom-Right) */}

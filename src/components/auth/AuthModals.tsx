@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Lock, Mail, User, Phone, MapPin, CreditCard, ShieldCheck, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, Lock, Mail, User, Phone, MapPin, CreditCard, ShieldCheck, CheckCircle2, AlertCircle, BookOpen } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
@@ -131,9 +131,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
 interface ApplyModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenGuide?: () => void;
 }
 
-export const ResellerApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose }) => {
+export const ResellerApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose, onOpenGuide }) => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -233,6 +234,23 @@ export const ResellerApplyModal: React.FC<ApplyModalProps> = ({ isOpen, onClose 
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
+            {/* Quick Guide Callout Banner */}
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2 text-amber-900 font-medium">
+                <BookOpen className="w-4 h-4 text-amber-700 shrink-0" />
+                <span>Pehli dafa apply kar rahay hain? Kaam aur kamai ka tareeqa samjhein:</span>
+              </div>
+              {onOpenGuide && (
+                <button
+                  type="button"
+                  onClick={onOpenGuide}
+                  className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold rounded-lg text-[11px] shrink-0 shadow-sm"
+                >
+                  Read Guide
+                </button>
+              )}
+            </div>
+
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Truck, ShieldCheck, RefreshCw, MessageSquare, Phone, MapPin, Mail } from 'lucide-react';
+import { Truck, ShieldCheck, RefreshCw, MessageSquare, Phone, MapPin, Mail, BookOpen, Sparkles } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { BrandLogo } from './BrandLogo';
 
@@ -8,6 +8,7 @@ interface FooterProps {
   onOpenExchange: () => void;
   onOpenApply: () => void;
   onOpenLogin: () => void;
+  onOpenResellerGuide?: () => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({
@@ -15,6 +16,7 @@ export const Footer: React.FC<FooterProps> = ({
   onOpenExchange,
   onOpenApply,
   onOpenLogin,
+  onOpenResellerGuide,
 }) => {
   const { brandName } = useAuth();
 
@@ -137,6 +139,13 @@ export const Footer: React.FC<FooterProps> = ({
               Earn <strong>Rs. 300 per delivered order</strong> plus a <strong>Rs. 500 cash bonus</strong> for every 10 delivered orders. Zero inventory risk.
             </p>
             <div className="space-y-2">
+              <button
+                onClick={onOpenResellerGuide}
+                className="w-full text-center px-3 py-2 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 font-bold text-xs rounded transition-colors flex items-center justify-center gap-1.5"
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>How to Work Guide (کیسے کمائیں؟)</span>
+              </button>
               <button
                 onClick={onOpenApply}
                 className="w-full text-center px-3 py-2 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs rounded transition-colors"

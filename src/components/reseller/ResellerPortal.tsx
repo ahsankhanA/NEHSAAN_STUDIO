@@ -20,14 +20,19 @@ import {
   ChevronDown,
   Sparkles,
   RefreshCw,
-  X
+  X,
+  BookOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import type { IOrder, OrderStatus } from '../../types';
 
-export const ResellerPortal: React.FC = () => {
+interface ResellerPortalProps {
+  onOpenGuide?: () => void;
+}
+
+export const ResellerPortal: React.FC<ResellerPortalProps> = ({ onOpenGuide }) => {
   const { user, reseller, logout } = useAuth();
   const [stats, setStats] = useState<any | null>(null);
   const [orders, setOrders] = useState<IOrder[]>([]);
@@ -184,6 +189,16 @@ export const ResellerPortal: React.FC = () => {
             <p className="text-[11px] text-stone-400">
               Share with customers on WhatsApp or Instagram. Any order placed generates <strong>Rs. 300 commission</strong>!
             </p>
+
+            {onOpenGuide && (
+              <button
+                onClick={onOpenGuide}
+                className="w-full mt-1.5 py-2 px-3 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>How to Earn & Share Guide (کیسے زیادہ کمائیں؟ مکمل گائیڈ)</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

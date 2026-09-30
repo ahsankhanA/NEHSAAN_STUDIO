@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingBag, Search, Truck, RefreshCw, UserCheck, Shield, LogOut, Menu, X, Tag, MessageCircle, Layers, Heart } from 'lucide-react';
+import { ShoppingBag, Search, Truck, RefreshCw, UserCheck, Shield, LogOut, Menu, X, Tag, MessageCircle, Layers, Heart, BookOpen } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
@@ -11,6 +11,7 @@ interface NavbarProps {
   onOpenExchange: () => void;
   onOpenLogin: () => void;
   onOpenApply: () => void;
+  onOpenResellerGuide?: () => void;
   activeCategory: string;
   onSelectCategory: (category: string, subcategory?: string) => void;
   searchQuery: string;
@@ -27,6 +28,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenExchange,
   onOpenLogin,
   onOpenApply,
+  onOpenResellerGuide,
   activeCategory,
   onSelectCategory,
   searchQuery,
@@ -94,6 +96,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <RefreshCw className="w-3.5 h-3.5" />
               <span>Returns</span>
+            </button>
+
+            <button
+              onClick={onOpenResellerGuide}
+              className="flex items-center gap-1 text-amber-400 hover:text-amber-300 font-bold bg-amber-500/10 hover:bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30 text-[11px] transition-all"
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>Reseller Guide (کیسے کمائیں؟)</span>
             </button>
 
             {!user ? (
@@ -431,6 +441,20 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Account & Reseller Portal */}
           <div className="pt-3 border-t border-stone-100 space-y-2 text-xs font-semibold">
+            <button
+              onClick={() => {
+                onOpenResellerGuide?.();
+                setMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center justify-between p-2.5 rounded-lg bg-amber-500/15 text-amber-900 border border-amber-400/60 font-bold"
+            >
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-amber-700" />
+                <span>How to Work as Reseller (کیسے کمائیں؟)</span>
+              </div>
+              <span className="text-[10px] bg-amber-500 text-stone-950 px-2 py-0.5 rounded font-extrabold">GUIDE</span>
+            </button>
+
             {!user ? (
               <>
                 <button
