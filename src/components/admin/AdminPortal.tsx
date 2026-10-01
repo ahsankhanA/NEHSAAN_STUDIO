@@ -43,6 +43,7 @@ import {
   Camera,
   UploadCloud,
   Image as ImageIcon,
+  Clock,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -125,6 +126,10 @@ export const AdminPortal: React.FC = () => {
 
   const [supplierModalOpen, setSupplierModalOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<any | null>(null);
+
+  // Products Tab Management & Stock Filters
+  const [productStockFilter, setProductStockFilter] = useState<'all' | 'in_stock' | 'out_of_stock'>('all');
+  const [productSearchTerm, setProductSearchTerm] = useState('');
 
   // Coupon Modal & State
   const [couponModalOpen, setCouponModalOpen] = useState(false);
@@ -330,6 +335,58 @@ export const AdminPortal: React.FC = () => {
       loadAllData();
     } catch (err: any) {
       showNotification(err.message || 'Failed to toggle stock', 'error');
+    }
+  };
+
+  // Explicitly Mark Product as IN_STOCK or OUT_OF_STOCK
+  const handleSetStockStatus = async (product: IProduct, newStatus: 'IN_STOCK' | 'OUT_OF_STOCK') => {
+    try {
+      const res = await api.setProductStockStatus(product._id, newStatus);
+      showNotification(res.message || `Product "${product.name}" marked as ${newStatus}.`);
+      loadAllData();
+    } catch (err: any) {
+      showNotification(err.message || 'Failed to update stock status', 'error');
+    }
+  };
+
+  // Super Admin action: Remove All Out-of-Stock Products with confirmation dialog
+  const handleRemoveAllOutOfStock = () => {
+    const outOfStockItems = products.filter(
+      (p) => p.stockStatus === 'OUT_OF_STOCK' || p.stockState === 'out_of_stock' || (p.stock !== undefined && p.stock <= 0)
+    );
+
+    if (outOfStockItems.length === 0) {
+      showNotification('There are currently no out-of-stock products to remove.', 'error');
+      return;
+    }
+
+    setConfirmDialog({
+      title: 'Remove All Out-of-Stock Products',
+      message: 'Are you sure you want to permanently delete all out-of-stock products? This action cannot be undone.',
+      confirmLabel: `Delete All Out of Stock (${outOfStockItems.length})`,
+      confirmButtonClass: 'bg-rose-600 hover:bg-rose-700 text-white font-bold',
+      icon: 'trash',
+      onConfirm: async () => {
+        try {
+          const res = await api.deleteAllOutOfStockProducts();
+          showNotification(res.message || `${res.count || outOfStockItems.length} out-of-stock products removed successfully.`);
+          setConfirmDialog(null);
+          loadAllData();
+        } catch (err: any) {
+          showNotification(err.message || 'Failed to remove out-of-stock products', 'error');
+        }
+      },
+    });
+  };
+
+  // Super Admin action: Manually trigger 3-day automatic cleanup check
+  const handleTriggerStockCleanup = async () => {
+    try {
+      const res = await api.triggerOutOfStockCleanup();
+      showNotification(res.message || `Cleanup complete: ${res.count || 0} expired product(s) deleted.`);
+      loadAllData();
+    } catch (err: any) {
+      showNotification(err.message || 'Failed to run cleanup check', 'error');
     }
   };
 
@@ -1328,142 +1385,418 @@ export const AdminPortal: React.FC = () => {
         )}
 
         {/* 2. Products & Inventory Tab */}
-        {activeTab === 'products' && (
-          <div className="bg-white rounded-b-xl border border-stone-200 shadow-sm p-4 space-y-4">
-            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
-              <div>
-                <h3 className="text-sm font-bold text-stone-900">Products Catalog & Wholesale Margins</h3>
-                <p className="text-xs text-stone-500">
-                  Wholesale costs and gross margins are strictly internal and visible only to Super Admins.
-                </p>
-              </div>
-            </div>
+        {activeTab === 'products' && (() => {
+          const isProductOut = (p: IProduct) =>
+            p.stockStatus === 'OUT_OF_STOCK' || p.stockState === 'out_of_stock' || (p.stock !== undefined && p.stock <= 0);
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-stone-50 border-b border-stone-200 text-stone-600">
-                    <th className="p-3">Product</th>
-                    <th className="p-3">SKU</th>
-                    <th className="p-3">Category</th>
-                    <th className="p-3">Retail Price</th>
-                    <th className="p-3">Wholesale (COGS)</th>
-                    <th className="p-3">Margin %</th>
-                    <th className="p-3">Stock Units</th>
-                    <th className="p-3">Status</th>
-                    <th className="p-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-stone-100">
-                  {products.map((p) => {
-                    const wholesale = p.wholesaleCost || 0;
-                    const margin =
-                      p.retailPrice > 0 ? Math.round(((p.retailPrice - wholesale) / p.retailPrice) * 100) : 0;
-                    return (
-                      <tr key={p._id} className="hover:bg-stone-50/70 transition-colors">
-                        <td className="p-3 flex items-center gap-2.5">
-                          <div className="relative shrink-0">
-                            <img
-                              src={p.images[0] || ''}
-                              alt=""
-                              className="w-10 h-12 object-cover rounded bg-stone-100 border border-stone-200"
-                            />
-                            {p.images && p.images.length > 1 && (
-                              <span
-                                className="absolute -bottom-1 -right-1 bg-stone-950 text-amber-300 text-[9px] px-1 py-0.2 rounded-full font-bold shadow-xs border border-stone-800"
-                                title={`${p.images.length} images/varieties available`}
-                              >
-                                +{p.images.length - 1}
-                              </span>
-                            )}
-                          </div>
-                          <div>
-                            <span className="font-semibold text-stone-900 block">{p.name}</span>
-                            <span className="text-[11px] text-stone-400">
-                              {p.fabric} • {p.color}
-                              {p.images && p.images.length > 1 ? ` • ${p.images.length} photos` : ''}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="p-3 font-mono text-stone-600">{p.sku}</td>
-                        <td className="p-3 text-stone-600">{p.category} ({p.subcategory})</td>
-                        <td className="p-3 font-bold text-stone-900">Rs. {p.retailPrice.toLocaleString()}</td>
-                        <td className="p-3 font-semibold text-stone-600">Rs. {wholesale.toLocaleString()}</td>
-                        <td className="p-3 font-bold text-emerald-700">{margin}%</td>
-                        <td className="p-3">
-                          <span
-                            className={`font-semibold ${
-                              p.stock <= p.lowStockThreshold ? 'text-amber-700 font-bold' : 'text-stone-800'
-                            }`}
-                          >
-                            {p.stock} units
-                          </span>
-                        </td>
-                        <td className="p-3">
-                          <button
-                            type="button"
-                            onClick={() => handleToggleProductStock(p)}
-                            className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase transition-all inline-flex items-center gap-1.5 shadow-xs ${
-                              p.stockState === 'in_stock' && p.stock > 0
-                                ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300'
-                                : 'bg-red-100 text-red-800 hover:bg-red-200 border border-red-300'
-                            }`}
-                            title="Click to toggle In Stock / Out of Stock"
-                          >
-                            <span className={`w-1.5 h-1.5 rounded-full ${p.stockState === 'in_stock' && p.stock > 0 ? 'bg-emerald-600' : 'bg-red-600'}`} />
-                            <span>{p.stockState === 'in_stock' && p.stock > 0 ? 'In Stock' : 'Out of Stock'}</span>
-                          </button>
-                        </td>
-                        <td className="p-3 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const isUnst = String(p.subcategory || '').toLowerCase() === 'unstitched';
-                                setEditingProduct({
-                                  ...p,
-                                  name: p.name || '',
-                                  sku: p.sku || '',
-                                  category: p.category || 'Ladies',
-                                  subcategory: p.subcategory || (isUnst ? 'Unstitched' : 'Stitched'),
-                                  fabric: p.fabric || '',
-                                  color: p.color || '',
-                                  retailPrice: p.retailPrice ?? 0,
-                                  wholesaleCost: p.wholesaleCost ?? 0,
-                                  stock: p.stock ?? 0,
-                                  description: p.description || '',
-                                  images: Array.isArray(p.images) ? p.images : [],
-                                  sizes: isUnst
-                                    ? ['Unstitched']
-                                    : ((p.sizes || []).filter((s) => s !== 'Unstitched').length > 0
-                                        ? p.sizes
-                                        : ['Small', 'Medium', 'Large']),
-                                });
-                                setProductModalOpen(true);
-                              }}
-                              className="p-1.5 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded transition-colors"
-                              title="Edit product"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteProduct(p._id, p.name)}
-                              className="p-1.5 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                              title="Delete product"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
+          const outOfStockCount = products.filter(isProductOut).length;
+          const inStockCount = products.filter((p) => !isProductOut(p)).length;
+
+          const filteredProducts = products.filter((p) => {
+            const isOut = isProductOut(p);
+            if (productStockFilter === 'in_stock' && isOut) return false;
+            if (productStockFilter === 'out_of_stock' && !isOut) return false;
+            if (productSearchTerm) {
+              const q = productSearchTerm.toLowerCase().trim();
+              const name = (p.name || '').toLowerCase();
+              const sku = (p.sku || '').toLowerCase();
+              const cat = (p.category || '').toLowerCase();
+              return name.includes(q) || sku.includes(q) || cat.includes(q);
+            }
+            return true;
+          });
+
+          return (
+            <div className="bg-white rounded-b-xl border border-stone-200 shadow-sm p-4 sm:p-6 space-y-5">
+              {/* Header Title & Primary Actions */}
+              <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-4 border-b border-stone-100 pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="p-1.5 bg-amber-50 rounded-lg text-amber-700 border border-amber-200">
+                      <Package className="w-5 h-5" />
+                    </span>
+                    <h3 className="text-base sm:text-lg font-bold text-stone-900">
+                      Products Catalog & Stock Management
+                    </h3>
+                  </div>
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    Manage real-time inventory, stock status, and automatic 3-day database cleanup.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2.5">
+                  {/* Remove All Out-of-Stock Products Button */}
+                  <button
+                    type="button"
+                    onClick={handleRemoveAllOutOfStock}
+                    disabled={outOfStockCount === 0}
+                    className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 shadow-sm transition-all ${
+                      outOfStockCount > 0
+                        ? 'bg-rose-600 hover:bg-rose-700 text-white cursor-pointer active:scale-95 shadow-rose-600/20'
+                        : 'bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed'
+                    }`}
+                    title="Permanently remove all out-of-stock products immediately from MongoDB Atlas"
+                  >
+                    <Trash2 className="w-4 h-4 shrink-0" />
+                    <span>Remove all out of stocks</span>
+                    {outOfStockCount > 0 && (
+                      <span className="ml-0.5 px-1.5 py-0.2 bg-white text-rose-700 font-extrabold text-[10px] rounded-full">
+                        {outOfStockCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {/* Add New Product Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingProduct({
+                        name: '',
+                        sku: `NV-${Date.now().toString().slice(-4)}`,
+                        category: 'Luxury Pret',
+                        subcategory: 'Stitched',
+                        fabric: 'Pure Lawn',
+                        color: 'Classic White',
+                        retailPrice: 4500,
+                        wholesaleCost: 2200,
+                        stock: 20,
+                        lowStockThreshold: 5,
+                        stockStatus: 'IN_STOCK',
+                        stockState: 'in_stock',
+                        images: ['https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80'],
+                        description: 'Premium quality handcrafted formal attire.',
+                        status: 'active',
+                      });
+                      setProductModalOpen(true);
+                    }}
+                    className="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs rounded-xl flex items-center gap-1.5 shadow transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add New Product</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 3-Day Automatic MongoDB Atlas Cleanup Explanation Card */}
+              <div className="bg-gradient-to-r from-amber-50/80 via-stone-50 to-stone-100 border border-amber-200/70 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="flex items-start gap-2.5">
+                  <div className="p-1.5 bg-amber-500 text-stone-950 rounded-lg shrink-0 mt-0.5 shadow-xs">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="font-bold text-stone-900 block">
+                      MongoDB Atlas 3-Day Automatic Out-of-Stock Cleanup Engine
+                    </span>
+                    <p className="text-stone-600 text-[11px] leading-relaxed">
+                      Jab bhi koi product <strong>OUT OF STOCK</strong> mark hoti hai to MongoDB Atlas mein authoritative server timestamp save ho jata hai.
+                      Theek <strong>3 din (72 ghantay)</strong> guzarne par background engine us product ko permanent delete kar deta hai. Agar product dobara <strong>IN STOCK</strong> ki jaye to deletion cancel ho jati hai.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-[11px] font-mono font-semibold px-2 py-1 bg-white border border-amber-300 text-amber-900 rounded-lg">
+                    In Stock: <strong>{inStockCount}</strong>
+                  </span>
+                  <span className="text-[11px] font-mono font-semibold px-2 py-1 bg-rose-50 border border-rose-300 text-rose-800 rounded-lg">
+                    Out of Stock: <strong>{outOfStockCount}</strong>
+                  </span>
+                </div>
+              </div>
+
+              {/* Search & Stock Filter Tabs */}
+              <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+                <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl border border-stone-200 text-xs font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => setProductStockFilter('all')}
+                    className={`px-3 py-1.5 rounded-lg transition-all ${
+                      productStockFilter === 'all'
+                        ? 'bg-white text-stone-900 shadow-xs font-bold'
+                        : 'text-stone-500 hover:text-stone-800'
+                    }`}
+                  >
+                    All Products ({products.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProductStockFilter('in_stock')}
+                    className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 ${
+                      productStockFilter === 'in_stock'
+                        ? 'bg-emerald-600 text-white shadow-xs font-bold'
+                        : 'text-stone-500 hover:text-emerald-700'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                    <span>In Stock ({inStockCount})</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProductStockFilter('out_of_stock')}
+                    className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 ${
+                      productStockFilter === 'out_of_stock'
+                        ? 'bg-rose-600 text-white shadow-xs font-bold'
+                        : 'text-stone-500 hover:text-rose-700'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-rose-400" />
+                    <span>Out of Stock ({outOfStockCount})</span>
+                  </button>
+                </div>
+
+                <div className="relative w-full sm:w-64">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                  <input
+                    type="text"
+                    placeholder="Search by name, SKU or fabric..."
+                    value={productSearchTerm}
+                    onChange={(e) => setProductSearchTerm(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-stone-50/50"
+                  />
+                </div>
+              </div>
+
+              {/* Products Table */}
+              <div className="overflow-x-auto rounded-xl border border-stone-200">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-stone-50 border-b border-stone-200 text-stone-600 font-semibold">
+                      <th className="p-3">Product</th>
+                      <th className="p-3">SKU</th>
+                      <th className="p-3">Category</th>
+                      <th className="p-3">Retail Price</th>
+                      <th className="p-3">Wholesale (COGS)</th>
+                      <th className="p-3">Units</th>
+                      <th className="p-3">Stock Status & Action</th>
+                      <th className="p-3">3-Day Auto Deletion</th>
+                      <th className="p-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100">
+                    {filteredProducts.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="p-8 text-center text-stone-400">
+                          No products found matching your filter criteria.
                         </td>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    ) : (
+                      filteredProducts.map((p) => {
+                        const wholesale = p.wholesaleCost || 0;
+                        const isOut = isProductOut(p);
+
+                        // Calculate 3-day deletion info
+                        let autoDeleteInfo: {
+                          sinceText: string;
+                          deleteFormatted: string;
+                          countdown: string;
+                          isExpired: boolean;
+                        } | null = null;
+
+                        if (isOut) {
+                          const dateObj = p.outOfStockAt ? new Date(p.outOfStockAt) : new Date(p.updatedAt || Date.now());
+                          const targetTime = new Date(dateObj.getTime() + 3 * 24 * 60 * 60 * 1000);
+                          const diffMs = targetTime.getTime() - Date.now();
+
+                          const sinceText = dateObj.toLocaleDateString('en-PK', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          });
+
+                          const deleteFormatted = targetTime.toLocaleDateString('en-PK', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          });
+
+                          if (diffMs <= 0) {
+                            autoDeleteInfo = {
+                              sinceText,
+                              deleteFormatted,
+                              countdown: 'Pending Automatic Deletion',
+                              isExpired: true,
+                            };
+                          } else {
+                            const hoursTotal = Math.floor(diffMs / (1000 * 60 * 60));
+                            const days = Math.floor(hoursTotal / 24);
+                            const hours = hoursTotal % 24;
+                            const countdown = days > 0 ? `${days}d ${hours}h left` : `${hours}h left`;
+                            autoDeleteInfo = {
+                              sinceText,
+                              deleteFormatted,
+                              countdown,
+                              isExpired: false,
+                            };
+                          }
+                        }
+
+                        return (
+                          <tr
+                            key={p._id}
+                            className={`transition-colors ${
+                              isOut ? 'bg-rose-50/25 hover:bg-rose-50/50' : 'hover:bg-stone-50/70'
+                            }`}
+                          >
+                            <td className="p-3 flex items-center gap-2.5">
+                              <div className="relative shrink-0">
+                                <img
+                                  src={p.images[0] || ''}
+                                  alt=""
+                                  className="w-10 h-12 object-cover rounded bg-stone-100 border border-stone-200"
+                                />
+                                {p.images && p.images.length > 1 && (
+                                  <span
+                                    className="absolute -bottom-1 -right-1 bg-stone-950 text-amber-300 text-[9px] px-1 py-0.2 rounded-full font-bold shadow-xs border border-stone-800"
+                                    title={`${p.images.length} images/varieties available`}
+                                  >
+                                    +{p.images.length - 1}
+                                  </span>
+                                )}
+                              </div>
+                              <div>
+                                <span className="font-semibold text-stone-900 block">{p.name}</span>
+                                <span className="text-[11px] text-stone-400">
+                                  {p.fabric} • {p.color}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="p-3 font-mono text-stone-600">{p.sku}</td>
+                            <td className="p-3 text-stone-600">
+                              {p.category} ({p.subcategory})
+                            </td>
+                            <td className="p-3 font-bold text-stone-900">
+                              Rs. {p.retailPrice.toLocaleString()}
+                            </td>
+                            <td className="p-3 font-semibold text-stone-600">
+                              Rs. {wholesale.toLocaleString()}
+                            </td>
+                            <td className="p-3">
+                              <span
+                                className={`font-semibold ${
+                                  p.stock <= p.lowStockThreshold ? 'text-amber-700 font-bold' : 'text-stone-800'
+                                }`}
+                              >
+                                {p.stock} units
+                              </span>
+                            </td>
+
+                            {/* Stock Status & Toggle Action */}
+                            <td className="p-3">
+                              <div className="flex flex-col gap-1.5">
+                                {isOut ? (
+                                  <>
+                                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-rose-100 text-rose-800 border border-rose-300 w-max shadow-2xs">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-rose-600" />
+                                      <span>OUT OF STOCK</span>
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSetStockStatus(p, 'IN_STOCK')}
+                                      className="px-2.5 py-1 text-[10px] font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded transition-all w-max shadow-2xs active:scale-95"
+                                      title="Mark In Stock (Cancels 3-day deletion timer)"
+                                    >
+                                      Mark In Stock
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 border border-emerald-300 w-max shadow-2xs">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                                      <span>IN STOCK</span>
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSetStockStatus(p, 'OUT_OF_STOCK')}
+                                      className="px-2.5 py-1 text-[10px] font-bold text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded transition-all w-max shadow-2xs active:scale-95"
+                                      title="Mark Out of Stock (Starts 3-day automatic MongoDB Atlas deletion countdown)"
+                                    >
+                                      Mark Out of Stock
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* 3-Day Auto Deletion Info */}
+                            <td className="p-3">
+                              {autoDeleteInfo ? (
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-1 text-[10px] text-rose-700 font-semibold">
+                                    <Clock className="w-3 h-3 shrink-0" />
+                                    <span>Since: {autoDeleteInfo.sinceText}</span>
+                                  </div>
+                                  <div className="text-[10px] font-mono text-stone-700">
+                                    <span className="text-stone-400">Auto-delete: </span>
+                                    <strong className={autoDeleteInfo.isExpired ? 'text-rose-700' : 'text-amber-800'}>
+                                      {autoDeleteInfo.countdown}
+                                    </strong>
+                                  </div>
+                                  <div className="text-[9px] text-stone-400">
+                                    Deadline: {autoDeleteInfo.deleteFormatted}
+                                  </div>
+                                </div>
+                              ) : (
+                                <span className="text-[11px] text-stone-400 italic">
+                                  Active in Catalog
+                                </span>
+                              )}
+                            </td>
+
+                            {/* Individual Actions */}
+                            <td className="p-3 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const isUnst = String(p.subcategory || '').toLowerCase() === 'unstitched';
+                                    setEditingProduct({
+                                      ...p,
+                                      name: p.name || '',
+                                      sku: p.sku || '',
+                                      category: p.category || 'Ladies',
+                                      subcategory: p.subcategory || (isUnst ? 'Unstitched' : 'Stitched'),
+                                      fabric: p.fabric || '',
+                                      color: p.color || '',
+                                      retailPrice: p.retailPrice ?? 0,
+                                      wholesaleCost: p.wholesaleCost ?? 0,
+                                      stock: p.stock ?? 0,
+                                      description: p.description || '',
+                                      images: Array.isArray(p.images) ? p.images : [],
+                                      sizes: isUnst
+                                        ? ['Unstitched']
+                                        : ((p.sizes || []).filter((s) => s !== 'Unstitched').length > 0
+                                            ? p.sizes
+                                            : ['Small', 'Medium', 'Large']),
+                                    });
+                                    setProductModalOpen(true);
+                                  }}
+                                  className="p-1.5 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded transition-colors"
+                                  title="Edit product"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteProduct(p._id, p.name)}
+                                  className="p-1.5 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                  title="Delete product"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Categories Dynamic Management Tab */}
         {activeTab === 'categories' && (

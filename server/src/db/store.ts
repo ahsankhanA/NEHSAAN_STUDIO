@@ -111,6 +111,7 @@ class MemoryDataStore {
         this.products = validClothing.map((p: any) => ({
           ...p,
           _id: String(p._id),
+          stockStatus: p.stockStatus || (p.stock > 0 && p.stockState !== 'out_of_stock' ? 'IN_STOCK' : 'OUT_OF_STOCK'),
           sizes: p.subcategory && p.subcategory.toLowerCase() === 'unstitched' ? ['Unstitched'] : (p.sizes || []),
         }));
       } catch (e) {

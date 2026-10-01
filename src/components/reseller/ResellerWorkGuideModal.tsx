@@ -29,6 +29,11 @@ import {
   Eye
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import applyImg from '../../assets/images/reseller_apply_step_1790793611818.jpg';
+import reviewImg from '../../assets/images/reseller_review_step_1790793625108.jpg';
+import approveImg from '../../assets/images/reseller_approve_step_1790793638745.jpg';
+import loginImg from '../../assets/images/reseller_login_step_1790793649602.jpg';
+import dashboardImg from '../../assets/images/reseller_dashboard_step_1790793659681.jpg';
 
 interface ResellerWorkGuideModalProps {
   isOpen: boolean;
@@ -71,7 +76,7 @@ export const ResellerWorkGuideModal: React.FC<ResellerWorkGuideModalProps> = ({
       title: 'Step 1: Apply (درخواست فارم پُر کریں)',
       subtitle: 'Apply as a Reseller par click karein aur free registration form bharein',
       badge: 'Zero Investment',
-      imageSrc: '/src/assets/images/reseller_apply_step_1790793611818.jpg',
+      imageSrc: applyImg,
       imageCaption: 'Step 1 Screenshot: Reseller Partnership Online Application Form',
       content: {
         romanUrdu: [
@@ -90,7 +95,7 @@ export const ResellerWorkGuideModal: React.FC<ResellerWorkGuideModalProps> = ({
       title: 'Step 2: Review (درخواست کی تصدیق)',
       subtitle: 'NEHSAAN Admin Team 24 se 48 ghantay me details check karti hai',
       badge: 'Admin Queue',
-      imageSrc: '/src/assets/images/reseller_review_step_1790793625108.jpg',
+      imageSrc: reviewImg,
       imageCaption: 'Step 2 Screenshot: Verification Queue & Super Admin Application Review',
       content: {
         romanUrdu: [
@@ -109,7 +114,7 @@ export const ResellerWorkGuideModal: React.FC<ResellerWorkGuideModalProps> = ({
       title: 'Step 3: Approve (منظوری اور ویریفائیڈ پارٹنر)',
       subtitle: 'Account approve hotay hi aapka official status activate ho jata hai',
       badge: 'Official Partner',
-      imageSrc: '/src/assets/images/reseller_approve_step_1790793638745.jpg',
+      imageSrc: approveImg,
       imageCaption: 'Step 3 Screenshot: Official Verification Seal & Approval Badge',
       content: {
         romanUrdu: [
@@ -128,7 +133,7 @@ export const ResellerWorkGuideModal: React.FC<ResellerWorkGuideModalProps> = ({
       title: 'Step 4: Login (پورٹل میں لاگ ان کریں)',
       subtitle: 'Apne Email & Password se portal me dakhil hon',
       badge: 'Secure Access',
-      imageSrc: '/src/assets/images/reseller_login_step_1790793649602.jpg',
+      imageSrc: loginImg,
       imageCaption: 'Step 4 Screenshot: Secure Authentication Login Portal',
       content: {
         romanUrdu: [
@@ -147,7 +152,7 @@ export const ResellerWorkGuideModal: React.FC<ResellerWorkGuideModalProps> = ({
       title: 'Step 5: Dashboard (منفرد کوڈ اور کمائی کا مرکز)',
       subtitle: 'Aapka Unique Reseller ID Code aur Personalized Referral Link',
       badge: 'Earning Engine',
-      imageSrc: '/src/assets/images/reseller_dashboard_step_1790793659681.jpg',
+      imageSrc: dashboardImg,
       imageCaption: 'Step 5 Screenshot: Live Reseller Dashboard with Unique Code & Realtime Analytics',
       content: {
         romanUrdu: [
@@ -167,7 +172,7 @@ export const ResellerWorkGuideModal: React.FC<ResellerWorkGuideModalProps> = ({
       title: 'Step 6: WhatsApp & Social Sharing (شیئرنگ کا طریقہ)',
       subtitle: 'WhatsApp status, groups aur social media par link share karein',
       badge: 'Social Selling',
-      imageSrc: '/src/assets/images/reseller_dashboard_step_1790793659681.jpg',
+      imageSrc: dashboardImg,
       imageCaption: 'Step 6 Screenshot: 1-Click WhatsApp Status & Catalog Sharing',
       content: {
         romanUrdu: [
@@ -185,7 +190,7 @@ export const ResellerWorkGuideModal: React.FC<ResellerWorkGuideModalProps> = ({
       title: 'Step 7: Sub-Reseller / Sister Team (اپنی ٹیم بنائیں)',
       subtitle: 'Apne under doosri sisters ko hire karein aur team profit kamayein',
       badge: 'Passive Network',
-      imageSrc: '/src/assets/images/reseller_approve_step_1790793638745.jpg',
+      imageSrc: approveImg,
       imageCaption: 'Step 7 Screenshot: Sub-Reseller Team Network & Commission Distribution',
       content: {
         romanUrdu: [

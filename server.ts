@@ -6,6 +6,7 @@ import { ENV } from './server/src/config/env.js';
 import { connectDatabase } from './server/src/config/db.js';
 import { seedInitialData } from './server/src/seeds/seedData.js';
 import { CartRecoveryService } from './server/src/services/cart-recovery.service.js';
+import { ProductStockCleanupService } from './server/src/services/product-stock-cleanup.service.js';
 import apiRouter from './server/src/routes/index.js';
 import { errorHandler } from './server/src/middleware/errorHandler.middleware.js';
 
@@ -24,6 +25,9 @@ async function startServer() {
 
   // Start 60-minute abandoned cart recovery scheduler
   CartRecoveryService.startWorker();
+
+  // Start 3-day out-of-stock automatic cleanup worker
+  ProductStockCleanupService.startWorker();
 
   // Mount API routes FIRST before SPA/Vite fallback
   app.use('/api', apiRouter);

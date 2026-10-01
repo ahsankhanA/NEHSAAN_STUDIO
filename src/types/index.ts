@@ -131,6 +131,8 @@ export interface IProduct {
   stock: number;
   lowStockThreshold: number;
   stockState: StockState;
+  stockStatus?: 'IN_STOCK' | 'OUT_OF_STOCK';
+  outOfStockAt?: string | null;
   supplierId?: string;
   supplierProductCode?: string;
   status: ProductStatus;

@@ -92,6 +92,8 @@ const ProductSchema = new Schema<IProduct>({
   stock: { type: Number, default: 10 },
   lowStockThreshold: { type: Number, default: 2 },
   stockState: { type: String, enum: ['in_stock', 'low_stock', 'out_of_stock', 'pre_order', 'supplier_confirmation_required'], default: 'in_stock' },
+  stockStatus: { type: String, enum: ['IN_STOCK', 'OUT_OF_STOCK'], default: 'IN_STOCK', index: true },
+  outOfStockAt: { type: Date, default: null, index: true },
   supplierId: { type: String, ref: 'Supplier' },
   supplierProductCode: { type: String },
   status: { type: String, enum: ['active', 'draft', 'out_of_stock', 'archived'], default: 'active', index: true },

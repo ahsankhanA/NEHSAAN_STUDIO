@@ -46,7 +46,13 @@ router.get('/products/admin/all', authenticate, requireSuperAdmin, ProductContro
 router.post('/products/admin', authenticate, requireSuperAdmin, ProductController.createProduct);
 router.put('/products/admin/:id', authenticate, requireSuperAdmin, ProductController.updateProduct);
 router.patch('/products/admin/:id/toggle-stock', authenticate, requireSuperAdmin, ProductController.toggleStock);
+router.patch('/products/admin/:id/stock-status', authenticate, requireSuperAdmin, ProductController.setStockStatus);
+router.patch('/products/:id/stock-status', authenticate, requireSuperAdmin, ProductController.setStockStatus);
+router.delete('/products/admin/out-of-stock', authenticate, requireSuperAdmin, ProductController.deleteAllOutOfStock);
+router.delete('/products/out-of-stock', authenticate, requireSuperAdmin, ProductController.deleteAllOutOfStock);
+router.post('/products/admin/cleanup-expired', authenticate, requireSuperAdmin, ProductController.triggerCleanupExpired);
 router.delete('/products/admin/:id', authenticate, requireSuperAdmin, ProductController.deleteProduct);
+router.delete('/products/:id', authenticate, requireSuperAdmin, ProductController.deleteProduct);
 
 // 4. Order Routes
 router.post('/orders', OrderController.createOrder); // Public checkout

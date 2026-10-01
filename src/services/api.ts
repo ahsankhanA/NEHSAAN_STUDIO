@@ -128,6 +128,27 @@ class ApiService {
     return this.request(`/products/admin/${id}/toggle-stock`, { method: 'PATCH' });
   }
 
+  public setProductStockStatus(id: string, stockStatus: 'IN_STOCK' | 'OUT_OF_STOCK') {
+    return this.request<{ message: string; product: any }>(`/products/admin/${id}/stock-status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ stockStatus }),
+    });
+  }
+
+  public deleteAllOutOfStockProducts() {
+    return this.request<{ success: boolean; message: string; count: number; deletedProducts: any[] }>(
+      '/products/admin/out-of-stock',
+      { method: 'DELETE' }
+    );
+  }
+
+  public triggerOutOfStockCleanup() {
+    return this.request<{ success: boolean; message: string; count: number; deletedProducts: any[] }>(
+      '/products/admin/cleanup-expired',
+      { method: 'POST' }
+    );
+  }
+
   // Orders
   public createOrder(orderPayload: any) {
     return this.request<{ message: string; order: any }>('/orders', {

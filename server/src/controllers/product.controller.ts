@@ -3,6 +3,7 @@ import { store } from '../db/store.js';
 import { ProductModel } from '../models/index.js';
 import { AuditService } from '../services/audit.service.js';
 import { ProductAlertService } from '../services/product-alert.service.js';
+import { ProductStockCleanupService } from '../services/product-stock-cleanup.service.js';
 import type { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import type { IProduct } from '../../src/types/index.js';
 
@@ -140,6 +141,9 @@ export class ProductController {
    * Super Admin Product Listing (Includes Wholesale and Margins)
    */
   public static async getAdminProducts(req: AuthenticatedRequest, res: Response): Promise<void> {
+    // Passive real-time cleanup check: ensures any expired products are purged immediately
+    await ProductStockCleanupService.cleanupExpiredProducts().catch(() => {});
+
     const productsWithMetrics = store.products.map((p) => {
       const wholesale = p.wholesaleCost || 0;
       const grossMargin = p.retailPrice - wholesale;
@@ -241,6 +245,8 @@ export class ProductController {
       stock: Number(stock ?? 10),
       lowStockThreshold: Number(lowStockThreshold ?? 2),
       stockState: Number(stock ?? 10) > 0 ? 'in_stock' : 'out_of_stock',
+      stockStatus: Number(stock ?? 10) > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK',
+      outOfStockAt: Number(stock ?? 10) > 0 ? null : new Date().toISOString(),
       supplierId,
       supplierProductCode,
       status: status || 'active',
@@ -309,8 +315,27 @@ export class ProductController {
       }
     }
 
-    if (updates.stock !== undefined) {
+    if (updates.stockStatus !== undefined) {
+      if (updates.stockStatus === 'OUT_OF_STOCK') {
+        product.stockStatus = 'OUT_OF_STOCK';
+        product.outOfStockAt = product.outOfStockAt || new Date().toISOString();
+        product.stockState = 'out_of_stock';
+        product.stock = 0;
+      } else {
+        product.stockStatus = 'IN_STOCK';
+        product.outOfStockAt = null;
+        product.stockState = 'in_stock';
+        product.stock = product.stock > 0 ? product.stock : 25;
+      }
+    } else if (updates.stock !== undefined) {
       product.stockState = product.stock > 0 ? 'in_stock' : 'out_of_stock';
+      if (product.stock <= 0 && product.stockStatus !== 'OUT_OF_STOCK') {
+        product.stockStatus = 'OUT_OF_STOCK';
+        product.outOfStockAt = new Date().toISOString();
+      } else if (product.stock > 0 && product.stockStatus === 'OUT_OF_STOCK') {
+        product.stockStatus = 'IN_STOCK';
+        product.outOfStockAt = null;
+      }
     }
 
     store.saveToDisk();
@@ -373,6 +398,40 @@ export class ProductController {
   }
 
   /**
+   * Super Admin Explicitly Mark Product Stock Status (IN_STOCK or OUT_OF_STOCK)
+   * PATCH /products/admin/:id/stock-status and PATCH /products/:id/stock-status
+   */
+  public static async setStockStatus(req: AuthenticatedRequest, res: Response): Promise<void> {
+    const { id } = req.params;
+    const { stockStatus } = req.body;
+
+    if (!stockStatus || (stockStatus !== 'IN_STOCK' && stockStatus !== 'OUT_OF_STOCK')) {
+      res.status(400).json({ error: 'Invalid stockStatus. Must be "IN_STOCK" or "OUT_OF_STOCK".' });
+      return;
+    }
+
+    const actor = req.user
+      ? { id: req.user._id, name: req.user.fullName, role: req.user.role, ip: req.ip }
+      : undefined;
+
+    const updatedProduct = await ProductStockCleanupService.setProductStockStatus(
+      id,
+      stockStatus,
+      actor
+    );
+
+    if (!updatedProduct) {
+      res.status(404).json({ error: 'Product not found.' });
+      return;
+    }
+
+    res.json({
+      message: `Product "${updatedProduct.name}" is now marked as ${updatedProduct.stockStatus}.`,
+      product: updatedProduct,
+    });
+  }
+
+  /**
    * Super Admin Toggle Stock Availability
    */
   public static async toggleStock(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -384,40 +443,55 @@ export class ProductController {
       return;
     }
 
-    const isCurrentlyInStock = product.stockState === 'in_stock' && product.stock > 0;
-    if (isCurrentlyInStock) {
-      product.stockState = 'out_of_stock';
-      product.stock = 0;
-    } else {
-      product.stockState = 'in_stock';
-      product.stock = 25; // Default stock restored
-    }
-    product.updatedAt = new Date().toISOString();
-    store.saveToDisk();
+    const isCurrentlyInStock = (product.stockStatus === 'IN_STOCK' || product.stockState === 'in_stock') && product.stock > 0;
+    const targetStatus = isCurrentlyInStock ? 'OUT_OF_STOCK' : 'IN_STOCK';
 
-    try {
-      await ProductModel.updateOne(
-        { _id: product._id },
-        { $set: { stockState: product.stockState, stock: product.stock, updatedAt: product.updatedAt } }
-      );
-    } catch (dbErr) {
-      console.warn('[ProductController] Direct MongoDB toggle stock notice:', (dbErr as Error).message);
-    }
+    const actor = req.user
+      ? { id: req.user._id, name: req.user.fullName, role: req.user.role, ip: req.ip }
+      : undefined;
 
-    AuditService.log({
-      actorId: req.user!._id,
-      actorName: req.user!.fullName,
-      actorRole: req.user!.role,
-      action: 'PRODUCT_STOCK_TOGGLED',
-      targetType: 'PRODUCT',
-      targetId: product._id,
-      metadata: { name: product.name, stockState: product.stockState, stock: product.stock },
-      ip: req.ip,
-    });
+    const updatedProduct = await ProductStockCleanupService.setProductStockStatus(
+      id,
+      targetStatus,
+      actor
+    );
 
     res.json({
-      message: `Stock for "${product.name}" is now ${product.stockState === 'in_stock' ? 'In Stock (25 pcs)' : 'Out of Stock'}.`,
-      product,
+      message: `Stock for "${updatedProduct!.name}" is now ${updatedProduct!.stockStatus === 'IN_STOCK' ? 'In Stock' : 'Out of Stock (3-day auto-cleanup active)'}.`,
+      product: updatedProduct,
+    });
+  }
+
+  /**
+   * Super Admin Delete ALL Out-of-Stock Products
+   * DELETE /products/admin/out-of-stock and DELETE /products/out-of-stock
+   */
+  public static async deleteAllOutOfStock(req: AuthenticatedRequest, res: Response): Promise<void> {
+    const actor = req.user
+      ? { id: req.user._id, name: req.user.fullName, role: req.user.role, ip: req.ip }
+      : undefined;
+
+    const result = await ProductStockCleanupService.removeAllOutOfStockProducts(actor);
+
+    res.json({
+      success: true,
+      message: `${result.deletedCount} out-of-stock product(s) removed successfully.`,
+      count: result.deletedCount,
+      deletedProducts: result.deletedProducts,
+    });
+  }
+
+  /**
+   * Trigger Manual 3-Day Expired Cleanup
+   * POST /products/admin/cleanup-expired
+   */
+  public static async triggerCleanupExpired(req: AuthenticatedRequest, res: Response): Promise<void> {
+    const result = await ProductStockCleanupService.cleanupExpiredProducts();
+    res.json({
+      success: true,
+      message: `Expired out-of-stock cleanup executed. Removed ${result.deletedCount} product(s).`,
+      count: result.deletedCount,
+      deletedProducts: result.deletedProducts,
     });
   }
 
