@@ -8,11 +8,17 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="alternate icon" type="image/x-icon" href="/favicon.ico" />
-    <title>NEHSAAN Clothing & Reseller Platform</title>
-    <meta name="description" content="Exclusive Pakistani clothing e-commerce storefront and reseller management platform with real-time attribution, commissions, and order management." />
-    <meta name="keywords" content="NEHSAAN, Pakistani designer suits, luxury pret, chiffon suits, lawn 2026, Cash on Delivery Pakistan, online clothing store Islamabad, Sohan Islamabad, reseller earning app Pakistan, wholesale women dresses" />
-    <meta name="author" content="NEHSAAN" />
+    <title>MaNHSaaN clothing — Designer Pret & Luxury Suits</title>
+    <meta name="description" content="MaNHSaaN clothing — Exclusive Pakistani designer clothing e-commerce storefront and reseller management platform with real-time attribution and Cash on Delivery nationwide." />
+    <meta name="keywords" content="MaNHSaaN clothing, MaNHSaaN, Pakistani designer suits, luxury pret, chiffon suits, lawn 2026, Cash on Delivery Pakistan, online clothing store Islamabad, Sohan Islamabad, reseller earning app Pakistan, wholesale women dresses" />
+    <meta name="author" content="Ahsan Khan" />
+    <meta name="creator" content="Ahsan Khan (MERN Stack Developer)" />
+    <meta name="application-name" content="MaNHSaaN clothing" />
+    <meta name="theme-color" content="#FAF8F5" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://manhsaanclothing.com/" />
 
     <!-- Pakistan Local Geo Targeting -->
     <meta name="geo.region" content="PK-IS" />
@@ -22,15 +28,22 @@
 
     <!-- OpenGraph / Facebook Social Cards -->
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="NEHSAAN" />
-    <meta property="og:title" content="NEHSAAN Clothing & Reseller Platform" />
-    <meta property="og:description" content="Exclusive Pakistani clothing e-commerce storefront and reseller management platform with real-time attribution, commissions, and order management." />
+    <meta property="og:url" content="https://manhsaanclothing.com/" />
+    <meta property="og:site_name" content="MaNHSaaN clothing" />
+    <meta property="og:title" content="MaNHSaaN clothing — Designer Pret & Luxury Suits" />
+    <meta property="og:description" content="MaNHSaaN clothing — Exclusive Pakistani designer clothing storefront and reseller platform offering luxury lawn, chiffon, stitched and unstitched suits with Cash on Delivery nationwide." />
+    <meta property="og:image" content="https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1200&h=630&q=85" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="MaNHSaaN clothing Luxury Pret & Designer Collection" />
     <meta property="og:locale" content="en_PK" />
 
     <!-- Twitter / X Cards -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="NEHSAAN Clothing & Reseller Platform" />
-    <meta name="twitter:description" content="Exclusive Pakistani clothing e-commerce storefront and reseller management platform with real-time attribution, commissions, and order management." />
+    <meta name="twitter:url" content="https://manhsaanclothing.com/" />
+    <meta name="twitter:title" content="MaNHSaaN clothing — Designer Pret & Luxury Suits" />
+    <meta name="twitter:description" content="MaNHSaaN clothing — Exclusive Pakistani designer clothing storefront and reseller platform offering luxury lawn, chiffon, stitched and unstitched suits with Cash on Delivery nationwide." />
+    <meta name="twitter:image" content="https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1200&h=630&q=85" />
 
     <!-- Schema.org JSON-LD Structured Data for Pakistan Market Search Engine Rich Snippets -->
     <script type="application/ld+json">
@@ -39,9 +52,9 @@
       "@graph": [
         {
           "@type": "ClothingStore",
-          "@id": "https://ais-pre-34zlh542z4oibmisejadvl-313057108654.asia-southeast1.run.app/#store",
-          "name": "NEHSAAN",
-          "alternateName": "NEHSAAN Clothing & Reseller Platform",
+          "@id": "https://manhsaanclothing.com/#store",
+          "name": "MaNHSaaN clothing",
+          "alternateName": "MaNHSaaN clothing Luxury Pret & Reseller Platform",
           "description": "Exclusive Pakistani designer clothing storefront and reseller platform offering luxury lawn, chiffon, stitched and unstitched suits with Cash on Delivery nationwide.",
           "address": {
             "@type": "PostalAddress",
@@ -64,13 +77,33 @@
             "@type": "Country",
             "name": "Pakistan"
           },
-          "openingHours": "Mo-Su 09:00-22:00"
+          "openingHours": "Mo-Su 09:00-22:00",
+          "founder": {
+            "@type": "Person",
+            "name": "Ahsan Khan",
+            "jobTitle": "Lead Full-Stack Architect & Software Engineer"
+          }
         },
         {
           "@type": "WebSite",
-          "@id": "https://ais-pre-34zlh542z4oibmisejadvl-313057108654.asia-southeast1.run.app/#website",
-          "name": "NEHSAAN",
-          "inLanguage": "en-PK"
+          "@id": "https://manhsaanclothing.com/#website",
+          "name": "MaNHSaaN clothing",
+          "url": "https://manhsaanclothing.com/",
+          "inLanguage": "en-PK",
+          "creator": {
+            "@type": "Person",
+            "name": "Ahsan Khan",
+            "jobTitle": "MERN Stack Engineer",
+            "description": "Architected with Custom MERN Stack (MongoDB, Express, React 19, Node.js)"
+          },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://manhsaanclothing.com/?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
         }
       ]
     }
@@ -84,4 +117,3 @@
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

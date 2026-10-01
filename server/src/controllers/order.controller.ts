@@ -491,6 +491,12 @@ export class OrderController {
       await CommissionService.handleOrderReversal(order, reason || 'Order returned');
     }
 
+    try {
+      await OrderModel.updateOne({ _id: order._id }, { $set: order }, { upsert: true });
+    } catch (err) {
+      console.warn('[Order] Direct MongoDB status update notice:', (err as Error).message);
+    }
+
     store.saveToDisk();
 
     AuditService.log({
@@ -615,6 +621,12 @@ export class OrderController {
       await CommissionService.handleOrderDelivered(order);
     } else if (currentStatus === 'DELIVERED' && (newStatus === 'RETURNED' || newStatus === 'CANCELLED')) {
       await CommissionService.handleOrderReversal(order, auditReason);
+    }
+
+    try {
+      await OrderModel.updateOne({ _id: order._id }, { $set: order }, { upsert: true });
+    } catch (err) {
+      console.warn('[Order] Direct MongoDB admin status update notice:', (err as Error).message);
     }
 
     store.saveToDisk();

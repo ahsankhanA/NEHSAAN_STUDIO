@@ -271,7 +271,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
                 <div className="space-y-4">
                   {/* Category & SKU */}
                   <div className="flex items-center gap-2 text-[11px] sm:text-xs text-stone-500 uppercase tracking-widest font-semibold flex-wrap">
-                    <span className="text-amber-700 font-bold">{product.brand || 'NEHSAAN'}</span>
+                    <span className="text-amber-700 font-bold">{product.brand || 'MaNHSaaN clothing'}</span>
                     <span>•</span>
                     <span>
                       {product.category} {product.subcategory && `(${product.subcategory})`}

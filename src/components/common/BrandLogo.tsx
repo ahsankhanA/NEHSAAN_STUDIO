@@ -17,7 +17,7 @@ export const HangerIcon: React.FC<{ size?: number; className?: string; color?: s
     xmlns="http://www.w3.org/2000/svg"
     className={`inline-block shrink-0 transition-transform ${className}`}
     style={{ shapeRendering: 'geometricPrecision' }}
-    aria-label="NehSaan Clothing Hanger Logo"
+    aria-label="MaNHSaaN clothing Hanger Logo"
   >
     <defs>
       <linearGradient id="hangerGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -150,7 +150,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
 
   return (
     <div className={`inline-flex flex-col items-center justify-center select-none text-left ${sizeStyles.gap} ${className}`}>
-      {/* Brand Header: [HANGER LOGO] NehSaan */}
+      {/* Brand Header: [HANGER LOGO] MaNHSaaN clothing */}
       <div className="flex items-center gap-2 sm:gap-2.5">
         {showEmblem && (
           <div className="p-1 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
@@ -162,13 +162,13 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
             className={`font-serif font-bold tracking-[0.16em] transition-colors leading-tight ${sizeStyles.text} ${colors.text}`}
             style={{ fontFamily: "'Playfair Display', 'Cinzel', Georgia, serif" }}
           >
-            NehSaan
+            MaNHSaaN
           </span>
           {showSubtitle && (
             <span
-              className={`font-sans uppercase font-semibold text-[8px] sm:text-[9.5px] tracking-[0.24em] ${colors.subtitle} -mt-0.5`}
+              className={`font-sans uppercase font-bold text-[8.5px] sm:text-[10px] tracking-[0.24em] ${colors.subtitle} -mt-0.5`}
             >
-              Haute Couture
+              clothing
             </span>
           )}
         </div>

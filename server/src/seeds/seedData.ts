@@ -5,7 +5,7 @@ import type { ISettings, IUser } from '../../src/types/index.js';
 
 export const DEFAULT_SETTINGS: ISettings = {
   store: {
-    brandName: 'NEHSAAN',
+    brandName: 'MaNHSaaN clothing',
     logoUrl: '',
     faviconUrl: '',
     tagline: 'Exclusive Haute Couture & Luxury Clothing',
@@ -83,7 +83,7 @@ export async function seedInitialData(force = false): Promise<void> {
       _id: adminUserId,
       email: superAdminEmail,
       passwordHash: hashedAdminPassword,
-      fullName: 'NEHSAAN Super Admin',
+      fullName: 'MaNHSaaN Super Admin',
       phone: '+923235277238',
       role: 'SUPER_ADMIN',
       isActive: true,
@@ -95,7 +95,7 @@ export async function seedInitialData(force = false): Promise<void> {
   } else {
     existingAdmin.email = superAdminEmail;
     existingAdmin.passwordHash = hashedAdminPassword;
-    existingAdmin.fullName = 'NEHSAAN Super Admin';
+    existingAdmin.fullName = 'MaNHSaaN Super Admin';
     existingAdmin.phone = '+923235277238';
     existingAdmin.role = 'SUPER_ADMIN';
     existingAdmin.isActive = true;

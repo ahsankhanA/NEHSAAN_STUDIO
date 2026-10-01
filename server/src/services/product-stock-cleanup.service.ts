@@ -199,7 +199,7 @@ export class ProductStockCleanupService {
       for (const item of deletedInfo) {
         AuditService.log({
           actorId: 'SYSTEM_SCHEDULER',
-          actorName: 'Nehsaan 3-Day Auto Cleanup Engine',
+          actorName: 'MaNHSaaN 3-Day Auto Cleanup Engine',
           actorRole: 'SUPER_ADMIN',
           action: 'PRODUCT_AUTO_CLEANUP_DELETED',
           targetType: 'PRODUCT',

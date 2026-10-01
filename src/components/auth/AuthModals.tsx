@@ -49,7 +49,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSucce
         <div className="flex items-center justify-between border-b border-stone-200 pb-3">
           <div>
             <div className="flex items-center gap-2 mb-0.5">
-              <span className="font-['Cinzel',serif] font-bold text-amber-900 tracking-widest text-lg">NEHSAAN</span>
+              <span className="font-['Cinzel',serif] font-bold text-amber-900 tracking-wider text-base">MaNHSaaN clothing</span>
             </div>
             <h2 className="font-serif text-lg font-bold text-stone-900">
               Sign In to Your Account

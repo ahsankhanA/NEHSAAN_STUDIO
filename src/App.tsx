@@ -17,12 +17,13 @@ import { CartDrawer } from './components/store/CartDrawer';
 import { WishlistDrawer } from './components/store/WishlistDrawer';
 import { CheckoutModal } from './components/store/CheckoutModal';
 import { OrderSuccessModal } from './components/store/OrderSuccessModal';
-import { TrackOrderView } from './components/store/TrackOrderView';
-import { ExchangeRequestView } from './components/store/ExchangeRequestView';
-import { ResellerPortal } from './components/reseller/ResellerPortal';
-import { AdminPortal } from './components/admin/AdminPortal';
-import { LoginModal, ResellerApplyModal } from './components/auth/AuthModals';
-import { ResellerWorkGuideModal } from './components/reseller/ResellerWorkGuideModal';
+const TrackOrderView = React.lazy(() => import('./components/store/TrackOrderView').then((m) => ({ default: m.TrackOrderView })));
+const ExchangeRequestView = React.lazy(() => import('./components/store/ExchangeRequestView').then((m) => ({ default: m.ExchangeRequestView })));
+const ResellerPortal = React.lazy(() => import('./components/reseller/ResellerPortal').then((m) => ({ default: m.ResellerPortal })));
+const AdminPortal = React.lazy(() => import('./components/admin/AdminPortal').then((m) => ({ default: m.AdminPortal })));
+const LoginModal = React.lazy(() => import('./components/auth/AuthModals').then((m) => ({ default: m.LoginModal })));
+const ResellerApplyModal = React.lazy(() => import('./components/auth/AuthModals').then((m) => ({ default: m.ResellerApplyModal })));
+const ResellerWorkGuideModal = React.lazy(() => import('./components/reseller/ResellerWorkGuideModal').then((m) => ({ default: m.ResellerWorkGuideModal })));
 import { api } from './services/api';
 import type { IProduct, IOrder, ICategory } from './types';
 import { Filter, Truck, ShieldCheck, Clock } from 'lucide-react';
@@ -201,20 +202,28 @@ const StorefrontContent: React.FC = () => {
 
       {/* Main Content Area */}
       <main className="flex-1">
-        {currentView === 'admin' ? (
-          <AdminPortal />
-        ) : currentView === 'reseller' ? (
-          <ResellerPortal onOpenGuide={() => setShowResellerGuide(true)} />
-        ) : showTrackView ? (
-          <TrackOrderView
-            initialOrderNumber={trackInitialData.orderNumber}
-            initialPhone={trackInitialData.phone}
-            onBack={() => setShowTrackView(false)}
-          />
-        ) : showExchangeView ? (
-          <ExchangeRequestView onBack={() => setShowExchangeView(false)} />
-        ) : (
-          <div className="space-y-6 sm:space-y-10 pb-16">
+        <React.Suspense
+          fallback={
+            <div className="min-h-[50vh] flex flex-col items-center justify-center p-8 space-y-3">
+              <div className="w-9 h-9 rounded-full border-2 border-amber-500 border-t-transparent animate-spin"></div>
+              <span className="text-xs text-stone-500 font-mono">Loading dynamic view...</span>
+            </div>
+          }
+        >
+          {currentView === 'admin' ? (
+            <AdminPortal />
+          ) : currentView === 'reseller' ? (
+            <ResellerPortal onOpenGuide={() => setShowResellerGuide(true)} />
+          ) : showTrackView ? (
+            <TrackOrderView
+              initialOrderNumber={trackInitialData.orderNumber}
+              initialPhone={trackInitialData.phone}
+              onBack={() => setShowTrackView(false)}
+            />
+          ) : showExchangeView ? (
+            <ExchangeRequestView onBack={() => setShowExchangeView(false)} />
+          ) : (
+            <div className="space-y-6 sm:space-y-10 pb-16">
             {/* 1. High-Impact Seasonal Hero Carousel with Framer Motion */}
             <HeroCarousel
               onSelectCategory={(cat, fab) => {
@@ -335,6 +344,7 @@ const StorefrontContent: React.FC = () => {
             <TestimonialsSlider />
           </div>
         )}
+        </React.Suspense>
       </main>
 
       {/* Footer */}
@@ -383,40 +393,47 @@ const StorefrontContent: React.FC = () => {
         onTrackOrder={handleOpenTrackFromConfirmation}
       />
 
-      <LoginModal
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        onSuccess={(role) => {
-          setShowTrackView(false);
-          setShowExchangeView(false);
-          if (role === 'SUPER_ADMIN') {
-            setCurrentView('admin');
-          } else {
-            setCurrentView('reseller');
-          }
-        }}
-        onSwitchToApply={() => setShowApplyModal(true)}
-      />
+      <React.Suspense fallback={null}>
+        {showLoginModal && (
+          <LoginModal
+            isOpen={showLoginModal}
+            onClose={() => setShowLoginModal(false)}
+            onSuccess={(role) => {
+              setShowTrackView(false);
+              setShowExchangeView(false);
+              if (role === 'SUPER_ADMIN') {
+                setCurrentView('admin');
+              } else {
+                setCurrentView('reseller');
+              }
+            }}
+            onSwitchToApply={() => setShowApplyModal(true)}
+          />
+        )}
 
-      <ResellerApplyModal
-        isOpen={showApplyModal}
-        onClose={() => setShowApplyModal(false)}
-        onOpenGuide={() => setShowResellerGuide(true)}
-      />
+        {showApplyModal && (
+          <ResellerApplyModal
+            isOpen={showApplyModal}
+            onClose={() => setShowApplyModal(false)}
+            onOpenGuide={() => setShowResellerGuide(true)}
+          />
+        )}
 
-      {/* Official Reseller Work & Earning System Guide Modal */}
-      <ResellerWorkGuideModal
-        isOpen={showResellerGuide}
-        onClose={() => setShowResellerGuide(false)}
-        onOpenApply={() => {
-          setShowResellerGuide(false);
-          setShowApplyModal(true);
-        }}
-        onOpenLogin={() => {
-          setShowResellerGuide(false);
-          setShowLoginModal(true);
-        }}
-      />
+        {showResellerGuide && (
+          <ResellerWorkGuideModal
+            isOpen={showResellerGuide}
+            onClose={() => setShowResellerGuide(false)}
+            onOpenApply={() => {
+              setShowResellerGuide(false);
+              setShowApplyModal(true);
+            }}
+            onOpenLogin={() => {
+              setShowResellerGuide(false);
+              setShowLoginModal(true);
+            }}
+          />
+        )}
+      </React.Suspense>
 
       {/* Realtime Social Proof Satisfied Customer Popup (Bottom-Right) */}
       <RecentSalesPopup products={products} />

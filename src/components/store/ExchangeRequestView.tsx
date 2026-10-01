@@ -63,7 +63,7 @@ export const ExchangeRequestView: React.FC<ExchangeRequestViewProps> = ({ onBack
       <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900 space-y-1.5">
         <div className="flex items-center gap-1.5 font-bold">
           <Info className="w-4 h-4 text-amber-700" />
-          <span>NEHSAAN Exchange Guidelines</span>
+          <span>MaNHSaaN clothing Exchange Guidelines</span>
         </div>
         <ul className="list-disc list-inside space-y-1 text-amber-800 text-[11px] leading-relaxed">
           <li>Exchange requests must be submitted within <strong>7 days</strong> of delivery.</li>

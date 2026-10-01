@@ -22,7 +22,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [reseller, setReseller] = useState<IReseller | null>(null);
   const [loading, setLoading] = useState(true);
   const [needsSetup, setNeedsSetup] = useState(false);
-  const [brandName, setBrandName] = useState('NEHSAAN');
+  const [brandName, setBrandName] = useState('MaNHSaaN clothing');
 
   const checkSetupStatus = async () => {
     try {

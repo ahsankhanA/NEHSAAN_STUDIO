@@ -162,13 +162,25 @@ export const Footer: React.FC<FooterProps> = ({
           </div>
         </div>
 
-        {/* Copyright */}
-        <div className="pt-8 border-t border-stone-900 flex flex-col sm:flex-row items-center justify-between text-xs text-stone-400 gap-4">
-          <p>© {new Date().getFullYear()} {brandName || 'NEHSAAN'}. All Rights Reserved.</p>
-          <p className="flex items-center gap-2">
-            <span>Logistics:</span>
-            <span className="font-semibold text-stone-200 bg-stone-900 px-2 py-0.5 rounded">Express Courier COD</span>
-          </p>
+        {/* Copyright & Engineering Attribution */}
+        <div className="pt-8 border-t border-stone-900 flex flex-col md:flex-row items-center justify-between text-xs text-stone-400 gap-4">
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 text-center sm:text-left">
+            <p>© {new Date().getFullYear()} {brandName || 'MaNHSaaN clothing'}. All Rights Reserved.</p>
+            <span className="hidden sm:inline text-stone-700">|</span>
+            <p className="text-stone-300">
+              Custom Engineered with <span className="text-amber-400 font-bold font-mono">MERN Stack</span> by <strong className="text-stone-100 font-bold">AHSAN KHAN</strong>
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1.5 text-stone-300 bg-stone-900 px-2.5 py-1 rounded-full border border-stone-800">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span className="font-mono text-[11px]">MERN Architecture</span>
+            </span>
+            <p className="flex items-center gap-1.5">
+              <span>Logistics:</span>
+              <span className="font-semibold text-stone-200 bg-stone-900 px-2 py-0.5 rounded">Express Courier COD</span>
+            </p>
+          </div>
         </div>
       </div>
     </footer>

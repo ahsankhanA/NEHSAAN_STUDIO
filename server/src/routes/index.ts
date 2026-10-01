@@ -25,7 +25,7 @@ const router = Router();
 router.get('/health', (req, res) => {
   res.json({
     status: 'ok',
-    service: 'NEHSAAN Luxury E-Commerce & Reseller Engine',
+    service: 'MaNHSaaN clothing E-Commerce & Reseller Engine',
     timestamp: new Date().toISOString(),
   });
 });

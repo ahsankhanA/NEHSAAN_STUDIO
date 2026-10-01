@@ -15,7 +15,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
     <AnimatePresence>
       {isLoading && (
         <motion.div
-          key="nehsaan-loader"
+          key="manhsaan-loader"
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.6, ease: 'easeInOut' }}
@@ -43,7 +43,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
                     className="absolute inset-0 bg-gradient-to-tr from-transparent via-amber-400/10 to-transparent"
                   />
                   <span className="font-serif text-3xl sm:text-4xl font-bold bg-gradient-to-b from-amber-200 via-amber-400 to-amber-600 bg-clip-text text-transparent">
-                    N
+                    M
                   </span>
                 </div>
               </div>
@@ -59,11 +59,11 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
             </div>
 
             {/* Brand Title */}
-            <h1 className="font-serif text-3xl sm:text-4xl font-bold tracking-[0.25em] text-white uppercase">
-              NEHSAAN
+            <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-[0.16em] text-white">
+              MaNHSaaN clothing
             </h1>
-            <p className="text-[10px] sm:text-xs uppercase tracking-[0.3em] text-amber-500 font-semibold mt-1">
-              Haute Couture • Islamabad
+            <p className="text-[10px] sm:text-xs uppercase tracking-[0.25em] text-amber-500 font-semibold mt-1">
+              Luxury Designer Collection
             </p>
 
             {/* Elegant Divider */}

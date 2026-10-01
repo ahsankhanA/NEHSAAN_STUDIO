@@ -170,7 +170,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               if (onSelectFabric) onSelectFabric('all');
             }}
             className="text-left group flex items-center gap-2 sm:gap-3 transition-opacity hover:opacity-90"
-            title="NEHSAAN Haute Couture"
+            title="MaNHSaaN clothing"
           >
             <BrandLogo variant="dark" size="md" showSubtitle={true} showEmblem={true} />
             <span className="hidden lg:inline-block px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-900 rounded border border-amber-300">
@@ -337,6 +337,14 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Mobile Drawer Navigation */}
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-stone-200 bg-white px-4 py-4 space-y-4 shadow-xl animate-fadeIn">
+          {/* Brand Header inside Mobile Drawer */}
+          <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+            <BrandLogo variant="dark" size="sm" showSubtitle={true} showEmblem={true} />
+            <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full border border-amber-300">
+              MaNHSaaN clothing
+            </span>
+          </div>
+
           {/* Categories List in Mobile Drawer */}
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 block mb-2">

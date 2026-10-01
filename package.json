@@ -1,7 +1,9 @@
 {
-  "name": "react-example",
+  "name": "manhsaan-clothing",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Production MERN Stack e-commerce storefront & reseller platform for MaNHSaaN clothing, custom-engineered by Ahsan Khan.",
+  "author": "Ahsan Khan",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",

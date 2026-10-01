@@ -72,7 +72,7 @@ const ProductSchema = new Schema<IProduct>({
   sku: { type: String, required: true, unique: true, index: true },
   category: { type: String, required: true, index: true },
   subcategory: { type: String, required: true, index: true },
-  brand: { type: String, default: 'NIVORA' },
+  brand: { type: String, default: 'MaNHSaaN clothing' },
   description: { type: String, required: true },
   shortDescription: { type: String, default: '' },
   retailPrice: { type: Number, required: true },
@@ -248,7 +248,7 @@ const CustomerSchema = new Schema({
 // Settings Schema
 const SettingsSchema = new Schema<ISettings>({
   store: {
-    brandName: { type: String, default: 'NEHSAAN' },
+    brandName: { type: String, default: 'MaNHSaaN clothing' },
     logoUrl: { type: String, default: '' },
     faviconUrl: { type: String, default: '' },
     tagline: { type: String, default: 'Exclusive Haute Couture & Luxury Clothing' },

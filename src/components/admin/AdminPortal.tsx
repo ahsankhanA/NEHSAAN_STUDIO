@@ -245,7 +245,7 @@ export const AdminPortal: React.FC = () => {
       if (settData?.settings) {
         const s = settData.settings;
         setPlatformSettings({
-          brandName: s.store?.brandName || 'NEHSAAN',
+          brandName: s.store?.brandName || 'MaNHSaaN clothing',
           tagline: s.store?.tagline || 'Exclusive Haute Couture & Luxury Clothing',
           address: s.store?.address || 'Sohan Islamabad',
           supportPhone: s.store?.whatsappNumber || s.store?.primaryPhone || '+92 323 5277238',

@@ -210,7 +210,7 @@ export class ProductController {
     }
 
     // Auto-generate SKU if not provided
-    const sku = customSku || `NVR-${category.slice(0, 1).toUpperCase()}${subcategory.slice(0, 2).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
+    const sku = customSku || `MSN-${category.slice(0, 1).toUpperCase()}${subcategory.slice(0, 2).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
 
     // Determine sizes based on subcategory (Unstitched vs Stitched)
     const isUnstitched = String(subcategory).trim().toLowerCase() === 'unstitched';
@@ -230,7 +230,7 @@ export class ProductController {
       sku,
       category,
       subcategory,
-      brand: brand || store.settings?.store.brandName || 'NIVORA',
+      brand: brand || store.settings?.store.brandName || 'MaNHSaaN clothing',
       description: description || '',
       shortDescription: shortDescription || '',
       retailPrice: Number(retailPrice),

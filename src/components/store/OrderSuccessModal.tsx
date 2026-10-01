@@ -15,7 +15,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ order, onC
   const whatsappUrl =
     order.whatsappPrefilledLink ||
     `https://wa.me/923235277238?text=${encodeURIComponent(
-      `*NEW ORDER - NEHSAAN*\nOrder #: ${order.orderNumber}\nCustomer: ${order.customer.fullName}\nPhone: ${order.customer.phone}\nCity: ${order.customer.city}\nAddress: ${order.customer.address}\nSuits: ${order.items.map((i: any) => `${i.name} (${i.size || 'Standard'}) x${i.quantity}`).join(', ')}\nTotal Payable (COD): Rs. ${order.total.toLocaleString()}\nPlease confirm dispatch!`
+      `*NEW ORDER - MaNHSaaN clothing*\nOrder #: ${order.orderNumber}\nCustomer: ${order.customer.fullName}\nPhone: ${order.customer.phone}\nCity: ${order.customer.city}\nAddress: ${order.customer.address}\nSuits: ${order.items.map((i: any) => `${i.name} (${i.size || 'Standard'}) x${i.quantity}`).join(', ')}\nTotal Payable (COD): Rs. ${order.total.toLocaleString()}\nPlease confirm dispatch!`
     )}`;
 
   return (
@@ -26,12 +26,12 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ order, onC
           <div className="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
             <CheckCircle2 className="w-8 h-8" />
           </div>
-          <span className="font-brand font-bold text-amber-900 tracking-widest text-sm block">NEHSAAN</span>
+          <span className="font-brand font-bold text-amber-900 tracking-widest text-sm block">MaNHSaaN clothing</span>
           <h2 className="font-serif text-2xl font-bold text-stone-900 tracking-tight">
             Order Confirmed!
           </h2>
           <p className="text-xs text-stone-500">
-            Thank you for shopping with NEHSAAN. Your order is booked for Cash on Delivery.
+            Thank you for shopping with MaNHSaaN clothing. Your order is booked for Cash on Delivery.
           </p>
         </div>
 

@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import { store } from '../db/store.js';
+import { UserModel, ResellerModel } from '../models/index.js';
 import { AuditService } from '../services/audit.service.js';
 import type { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 
@@ -162,7 +163,7 @@ export class ResellerController {
     });
 
     res.json({
-      message: 'Your resignation has been recorded. Account access is now restricted. Thank you for your partnership with NEHSAAN.',
+      message: 'Your resignation has been recorded. Account access is now restricted. Thank you for your partnership with MaNHSaaN clothing.',
     });
   }
 
@@ -227,6 +228,15 @@ export class ResellerController {
     const user = store.users.find((u) => u._id === reseller.userId);
     if (user) {
       user.isActive = true;
+      try {
+        await UserModel.updateOne({ _id: user._id }, { $set: { isActive: true } });
+      } catch {}
+    }
+
+    try {
+      await ResellerModel.updateOne({ _id: reseller._id }, { $set: reseller }, { upsert: true });
+    } catch (err) {
+      console.warn('[Reseller] Direct MongoDB approve notice:', (err as Error).message);
     }
 
     store.saveToDisk();
@@ -247,7 +257,7 @@ export class ResellerController {
       recipientRole: 'RESELLER',
       recipientResellerId: reseller._id,
       title: 'Application Approved!',
-      message: `Congratulations ${reseller.fullName}! Your NEHSAAN reseller account is active. Your referral code is ${reseller.code}.`,
+      message: `Congratulations ${reseller.fullName}! Your MaNHSaaN clothing reseller account is active. Your referral code is ${reseller.code}.`,
       link: '/reseller/referral',
       isRead: false,
       createdAt: new Date().toISOString(),
@@ -275,6 +285,12 @@ export class ResellerController {
     reseller.status = 'rejected';
     reseller.notes = reason ? `Rejected: ${reason}` : 'Application rejected';
     reseller.updatedAt = new Date().toISOString();
+
+    try {
+      await ResellerModel.updateOne({ _id: reseller._id }, { $set: reseller }, { upsert: true });
+    } catch (err) {
+      console.warn('[Reseller] Direct MongoDB reject notice:', (err as Error).message);
+    }
 
     store.saveToDisk();
 
@@ -313,7 +329,16 @@ export class ResellerController {
       const u = store.users.find((user) => user._id === reseller.userId);
       if (u) {
         u.isActive = false;
+        try {
+          await UserModel.updateOne({ _id: u._id }, { $set: { isActive: false } });
+        } catch {}
       }
+    }
+
+    try {
+      await ResellerModel.updateOne({ _id: reseller._id }, { $set: reseller }, { upsert: true });
+    } catch (err) {
+      console.warn('[Reseller] Direct MongoDB suspend notice:', (err as Error).message);
     }
 
     store.saveToDisk();
@@ -352,7 +377,16 @@ export class ResellerController {
       const u = store.users.find((user) => user._id === reseller.userId);
       if (u) {
         u.isActive = true;
+        try {
+          await UserModel.updateOne({ _id: u._id }, { $set: { isActive: true } });
+        } catch {}
       }
+    }
+
+    try {
+      await ResellerModel.updateOne({ _id: reseller._id }, { $set: reseller }, { upsert: true });
+    } catch (err) {
+      console.warn('[Reseller] Direct MongoDB reactivate notice:', (err as Error).message);
     }
 
     store.saveToDisk();

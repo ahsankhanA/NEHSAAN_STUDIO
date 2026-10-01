@@ -144,7 +144,7 @@ export class SystemController {
     try {
       const backup = store.exportBackup();
       res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Content-Disposition', `attachment; filename=nehsaan_backup_${Date.now()}.json`);
+      res.setHeader('Content-Disposition', `attachment; filename=manhsaan_backup_${Date.now()}.json`);
       res.json(backup);
     } catch (error) {
       res.status(500).json({ message: 'Failed to export backup', error: (error as Error).message });

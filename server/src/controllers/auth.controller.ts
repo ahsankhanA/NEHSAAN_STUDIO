@@ -16,7 +16,7 @@ export class AuthController {
     const hasAdmin = store.users.some((u) => u.role === 'SUPER_ADMIN');
     res.json({
       needsSetup: !hasAdmin,
-      brandName: store.settings?.store.brandName || 'NEHSAAN',
+      brandName: store.settings?.store.brandName || 'MaNHSaaN clothing',
     });
   }
 
@@ -107,7 +107,7 @@ export class AuthController {
         _id: adminUserId,
         email: 'nehsaan@gmail.com',
         passwordHash: hashedAdminPassword,
-        fullName: 'NEHSAAN Super Admin',
+        fullName: 'MaNHSaaN Super Admin',
         phone: '+923235277238',
         role: 'SUPER_ADMIN',
         isActive: true,
