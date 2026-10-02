@@ -39,12 +39,15 @@ export class ProductController {
     } = req.query;
 
     const pageParam = req.query.page ? Math.max(1, parseInt(String(req.query.page), 10)) : undefined;
-    const isFetchAll = req.query.limit === 'all' || req.query.limit === '-1';
+    const isFetchAll =
+      req.query.limit === 'all' ||
+      req.query.limit === '-1' ||
+      (!req.query.limit && !req.query.page && !req.query.skip);
     const limitNum = isFetchAll
       ? undefined
       : req.query.limit !== undefined
       ? Math.max(1, Math.min(100, parseInt(String(req.query.limit), 10)))
-      : 8;
+      : undefined;
 
     const skipNum = isFetchAll
       ? 0

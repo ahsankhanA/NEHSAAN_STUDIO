@@ -37,7 +37,7 @@ const StorefrontContent: React.FC = () => {
   // Products & Categories state with instant local Stale-While-Revalidate caching
   const [products, setProducts] = useState<IProduct[]>(() => {
     try {
-      const cached = localStorage.getItem('manhsaan_products_cache_v1');
+      const cached = localStorage.getItem('manhsaan_products_cache_v2');
       if (cached) {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -67,14 +67,14 @@ const StorefrontContent: React.FC = () => {
   // Progressive Pagination & Infinite Scroll State
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8; // Optimal chunk for mobile and desktop DOM memory performance
-  const [visibleCount, setVisibleCount] = useState(8);
-  const [displayMode, setDisplayMode] = useState<'infinite' | 'paged'>('infinite');
+  const [visibleCount, setVisibleCount] = useState(12);
+  const [displayMode, setDisplayMode] = useState<'all' | 'infinite' | 'paged'>('all');
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const observerTarget = React.useRef<HTMLDivElement>(null);
 
   // Reset pagination counters whenever filters or search change
   useEffect(() => {
-    setVisibleCount(8);
+    setVisibleCount(12);
     setCurrentPage(1);
   }, [activeCategory, searchQuery, selectedFabric, sortBy]);
 
@@ -110,7 +110,7 @@ const StorefrontContent: React.FC = () => {
   const fetchProducts = async () => {
     try {
       if (products.length === 0) setLoading(true);
-      const params: Record<string, any> = {};
+      const params: Record<string, any> = { limit: 'all' };
       if (activeCategory !== 'all' && activeCategory !== 'sale') {
         const parts = activeCategory.split('-');
         params.category = parts[0];
@@ -149,7 +149,7 @@ const StorefrontContent: React.FC = () => {
       // Cache the default catalog view for instant future loads
       if (activeCategory === 'all' && !searchQuery.trim() && selectedFabric === 'all') {
         try {
-          localStorage.setItem('manhsaan_products_cache_v1', JSON.stringify(list));
+          localStorage.setItem('manhsaan_products_cache_v2', JSON.stringify(list));
         } catch {}
       }
     } catch (err) {
@@ -226,7 +226,9 @@ const StorefrontContent: React.FC = () => {
 
   // Computed products for display
   const displayedProducts =
-    displayMode === 'infinite'
+    displayMode === 'all'
+      ? products
+      : displayMode === 'infinite'
       ? products.slice(0, visibleCount)
       : products.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
@@ -464,12 +466,14 @@ const StorefrontContent: React.FC = () => {
                     <div ref={observerTarget} className="h-4 w-full pointer-events-none" />
                   )}
 
-                  {/* Pagination & Infinite Scroll Controls */}
-                  <div className="pt-4 border-t border-stone-200/80 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  {/* Pagination & View Mode Controls */}
+                  <div className="pt-5 border-t border-stone-200/80 flex flex-col md:flex-row items-center justify-between gap-4">
                     {/* Progress Indicator */}
-                    <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 text-xs text-stone-600 text-center sm:text-left w-full sm:w-auto">
+                    <div className="flex flex-col sm:flex-row items-center gap-2.5 text-xs text-stone-600 text-center sm:text-left w-full md:w-auto">
                       <span className="font-semibold text-stone-900">
-                        {displayMode === 'infinite'
+                        {displayMode === 'all'
+                          ? `Showing All ${products.length} Designs`
+                          : displayMode === 'infinite'
                           ? `Showing ${Math.min(visibleCount, products.length)} of ${products.length} Designs`
                           : `Showing ${(currentPage - 1) * itemsPerPage + 1} - ${Math.min(currentPage * itemsPerPage, products.length)} of ${products.length} Designs`}
                       </span>
@@ -479,116 +483,138 @@ const StorefrontContent: React.FC = () => {
                           className="h-full bg-amber-500 rounded-full transition-all duration-300"
                           style={{
                             width: `${
-                              displayMode === 'infinite'
-                                ? (Math.min(visibleCount, products.length) / products.length) * 100
-                                : (Math.min(currentPage * itemsPerPage, products.length) / products.length) * 100
+                              displayMode === 'all'
+                                ? 100
+                                : displayMode === 'infinite'
+                                ? (Math.min(visibleCount, products.length) / (products.length || 1)) * 100
+                                : (Math.min(currentPage * itemsPerPage, products.length) / (products.length || 1)) * 100
                             }%`,
                           }}
                         />
                       </div>
                     </div>
 
-                    {/* Actions: Load More Button (Infinite mode) OR Numbered Page Buttons (Paged mode) */}
-                    {displayMode === 'infinite' ? (
-                      <div className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-end">
-                        {visibleCount < products.length ? (
-                          <button
-                            onClick={() => {
-                              setIsLoadingMore(true);
-                              setTimeout(() => {
-                                setVisibleCount((prev) => Math.min(prev + 8, products.length));
-                                setIsLoadingMore(false);
-                              }, 300);
-                            }}
-                            disabled={isLoadingMore}
-                            className="w-full sm:w-auto px-6 py-2.5 bg-stone-900 hover:bg-stone-800 text-stone-50 rounded-full text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
-                          >
-                            {isLoadingMore ? (
-                              <>
-                                <div className="w-3.5 h-3.5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
-                                <span>Loading more designs...</span>
-                              </>
-                            ) : (
-                              <>
-                                <ArrowDown className="w-3.5 h-3.5 text-amber-400" />
-                                <span>Load More (+{Math.min(8, products.length - visibleCount)} Designs)</span>
-                              </>
-                            )}
-                          </button>
-                        ) : (
-                          <span className="text-xs text-stone-400 font-medium">
-                            ✓ All {products.length} exclusive designs loaded
-                          </span>
-                        )}
-
-                        {/* Switch to Numbered Pages */}
+                    {/* View Mode Switcher + Actions */}
+                    <div className="flex flex-wrap items-center justify-center md:justify-end gap-2.5 w-full md:w-auto">
+                      {/* View Mode Pills */}
+                      <div className="inline-flex bg-stone-100 p-1 rounded-xl border border-stone-200 text-xs font-semibold">
                         <button
-                          onClick={() => setDisplayMode('paged')}
-                          className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-full text-xs font-semibold transition-colors shrink-0 cursor-pointer"
-                          title="Switch to numbered pages"
+                          type="button"
+                          onClick={() => setDisplayMode('all')}
+                          className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                            displayMode === 'all'
+                              ? 'bg-stone-900 text-white shadow-xs'
+                              : 'text-stone-600 hover:text-stone-900'
+                          }`}
                         >
-                          Use Pages
+                          View All ({products.length})
                         </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
-                        {/* Previous Page */}
                         <button
+                          type="button"
                           onClick={() => {
-                            setCurrentPage((p) => Math.max(1, p - 1));
-                            window.scrollTo({ top: 500, behavior: 'smooth' });
+                            setDisplayMode('infinite');
+                            setVisibleCount(8);
                           }}
-                          disabled={currentPage === 1}
-                          className="p-2 rounded-lg bg-stone-100 text-stone-700 hover:bg-stone-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                          aria-label="Previous Page"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </button>
-
-                        {/* Numbered Page Buttons */}
-                        {Array.from({ length: totalPages }).map((_, idx) => {
-                          const pageNumber = idx + 1;
-                          return (
-                            <button
-                              key={pageNumber}
-                              onClick={() => {
-                                setCurrentPage(pageNumber);
-                                window.scrollTo({ top: 500, behavior: 'smooth' });
-                              }}
-                              className={`w-8 h-8 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                                currentPage === pageNumber
-                                  ? 'bg-stone-900 text-white shadow-xs'
-                                  : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-                              }`}
-                            >
-                              {pageNumber}
-                            </button>
-                          );
-                        })}
-
-                        {/* Next Page */}
-                        <button
-                          onClick={() => {
-                            setCurrentPage((p) => Math.min(totalPages, p + 1));
-                            window.scrollTo({ top: 500, behavior: 'smooth' });
-                          }}
-                          disabled={currentPage === totalPages}
-                          className="p-2 rounded-lg bg-stone-100 text-stone-700 hover:bg-stone-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                          aria-label="Next Page"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
-
-                        {/* Switch to Infinite Scroll */}
-                        <button
-                          onClick={() => setDisplayMode('infinite')}
-                          className="ml-2 px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-full text-xs font-semibold transition-colors shrink-0 cursor-pointer"
-                          title="Switch to continuous scroll"
+                          className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                            displayMode === 'infinite'
+                              ? 'bg-stone-900 text-white shadow-xs'
+                              : 'text-stone-600 hover:text-stone-900'
+                          }`}
                         >
                           Infinite Scroll
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDisplayMode('paged');
+                            setCurrentPage(1);
+                          }}
+                          className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                            displayMode === 'paged'
+                              ? 'bg-stone-900 text-white shadow-xs'
+                              : 'text-stone-600 hover:text-stone-900'
+                          }`}
+                        >
+                          Pages ({totalPages})
+                        </button>
                       </div>
-                    )}
+
+                      {/* Infinite Scroll Load More Button */}
+                      {displayMode === 'infinite' && visibleCount < products.length && (
+                        <button
+                          onClick={() => {
+                            setIsLoadingMore(true);
+                            setTimeout(() => {
+                              setVisibleCount((prev) => Math.min(prev + 8, products.length));
+                              setIsLoadingMore(false);
+                            }, 300);
+                          }}
+                          disabled={isLoadingMore}
+                          className="px-5 py-1.5 bg-stone-900 hover:bg-stone-800 text-stone-50 rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
+                        >
+                          {isLoadingMore ? (
+                            <>
+                              <div className="w-3.5 h-3.5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                              <span>Loading...</span>
+                            </>
+                          ) : (
+                            <>
+                              <ArrowDown className="w-3.5 h-3.5 text-amber-400" />
+                              <span>Load More (+{Math.min(8, products.length - visibleCount)})</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+
+                      {/* Numbered Pagination Buttons */}
+                      {displayMode === 'paged' && (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => {
+                              setCurrentPage((p) => Math.max(1, p - 1));
+                              window.scrollTo({ top: 500, behavior: 'smooth' });
+                            }}
+                            disabled={currentPage === 1}
+                            className="p-1.5 rounded-lg bg-stone-100 text-stone-700 hover:bg-stone-200 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                            aria-label="Previous Page"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </button>
+
+                          {Array.from({ length: totalPages }).map((_, idx) => {
+                            const pageNumber = idx + 1;
+                            return (
+                              <button
+                                key={pageNumber}
+                                onClick={() => {
+                                  setCurrentPage(pageNumber);
+                                  window.scrollTo({ top: 500, behavior: 'smooth' });
+                                }}
+                                className={`w-8 h-8 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                  currentPage === pageNumber
+                                    ? 'bg-stone-900 text-white shadow-xs'
+                                    : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                                }`}
+                              >
+                                {pageNumber}
+                              </button>
+                            );
+                          })}
+
+                          <button
+                            onClick={() => {
+                              setCurrentPage((p) => Math.min(totalPages, p + 1));
+                              window.scrollTo({ top: 500, behavior: 'smooth' });
+                            }}
+                            disabled={currentPage === totalPages}
+                            className="p-1.5 rounded-lg bg-stone-100 text-stone-700 hover:bg-stone-200 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                            aria-label="Next Page"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
