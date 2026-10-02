@@ -1,15 +1,29 @@
-import sharp from 'sharp';
+let sharpModule: any = null;
+let sharpChecked = false;
+
+async function getSharpInstance(): Promise<any> {
+  if (sharpChecked) return sharpModule;
+  sharpChecked = true;
+  try {
+    const mod = await import('sharp');
+    sharpModule = mod.default || mod;
+  } catch {
+    console.warn('[ImageOptimizer] Notice: native "sharp" package is optional. Base64 images will be passed through without local native transcoding.');
+    sharpModule = null;
+  }
+  return sharpModule;
+}
 
 /**
- * Server-Side Image Optimization Service using Sharp
- * Automatically compresses large Base64 images to lightweight WebP format.
+ * Server-Side Image Optimization Service
+ * Uses Sharp when available, with zero-crash safe fallback if native module is absent in cloud hosting.
  */
 export class ImageOptimizationService {
   private static cache = new Map<string, string>();
 
   /**
    * Optimizes a Base64 data URL into a lightweight, high-performance WebP Base64 URL.
-   * If the input is not a Base64 string or is already small, returns as-is.
+   * If sharp is unavailable or input is not Base64, returns original dataUrl safely.
    */
   public static async optimizeBase64Image(
     dataUrl: string,
@@ -31,6 +45,11 @@ export class ImageOptimizationService {
     }
 
     try {
+      const sharp = await getSharpInstance();
+      if (!sharp) {
+        return dataUrl;
+      }
+
       const parts = dataUrl.split(',');
       if (parts.length < 2) return dataUrl;
 
