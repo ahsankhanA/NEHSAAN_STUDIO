@@ -107,8 +107,12 @@ const ProductSchema = new Schema<IProduct>({
 }, { timestamps: true });
 
 // Compound indexes for rapid catalog queries and high-concurrency sorting
+ProductSchema.index({ category: 1 });
+ProductSchema.index({ tags: 1 });
+ProductSchema.index({ category: 1, tags: 1 });
 ProductSchema.index({ status: 1, createdAt: -1 });
 ProductSchema.index({ status: 1, category: 1 });
+ProductSchema.index({ status: 1, category: 1, tags: 1 });
 ProductSchema.index({ status: 1, subcategory: 1 });
 ProductSchema.index({ status: 1, retailPrice: 1 });
 

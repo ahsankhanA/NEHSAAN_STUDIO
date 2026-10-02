@@ -11,6 +11,9 @@ import {
   Camera,
   MessageSquare,
   Sparkles,
+  Share2,
+  Copy,
+  MessageCircle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import type { IProduct, IReview } from '../../types';
@@ -27,6 +30,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(1);
   const [addedNotice, setAddedNotice] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   // Reviews state
   const [activeTab, setActiveTab] = useState<'details' | 'reviews'>('details');
@@ -70,6 +74,125 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
 
     return () => {
       document.body.style.overflow = originalOverflow;
+    };
+  }, [product]);
+
+  // Dynamic OpenGraph, Twitter Cards, and Schema.org Product Metadata for Social Media Previews
+  useEffect(() => {
+    if (!product) return;
+
+    const originalTitle = document.title;
+    const formattedPrice = `Rs. ${product.retailPrice.toLocaleString()}`;
+    const productTitle = `${product.name} — ${formattedPrice} | MaNHSaaN clothing`;
+    document.title = productTitle;
+
+    const cleanSlug = product.slug || product._id;
+    const shareUrl = `${window.location.origin}/?product=${encodeURIComponent(cleanSlug)}`;
+
+    // Push shareable URL into browser history without reload
+    try {
+      window.history.pushState({ productId: product._id }, '', shareUrl);
+    } catch {}
+
+    // Primary image resolution
+    const rawImg = product.images && product.images[0] ? product.images[0] : '';
+    const ogImg = rawImg.startsWith('http')
+      ? rawImg
+      : rawImg.startsWith('data:')
+      ? rawImg
+      : `${window.location.origin}${rawImg}`;
+
+    const descriptionText =
+      product.shortDescription ||
+      (product.description ? product.description.slice(0, 160) : '') ||
+      `Buy ${product.name} (${product.category} - ${product.fabric || 'Luxury Fabric'}). Price: ${formattedPrice} with Express Cash on Delivery nationwide.`;
+
+    const setMetaTag = (attr: 'name' | 'property', key: string, content: string) => {
+      let tag = document.querySelector(`meta[${attr}="${key}"]`) as HTMLMetaElement | null;
+      let prevContent = '';
+      let wasCreated = false;
+      if (!tag) {
+        tag = document.createElement('meta');
+        tag.setAttribute(attr, key);
+        document.head.appendChild(tag);
+        wasCreated = true;
+      } else {
+        prevContent = tag.getAttribute('content') || '';
+      }
+      tag.setAttribute('content', content);
+      return { tag, prevContent, wasCreated };
+    };
+
+    const cleanupMeta = [
+      setMetaTag('name', 'description', descriptionText),
+      setMetaTag('property', 'og:type', 'product'),
+      setMetaTag('property', 'og:title', productTitle),
+      setMetaTag('property', 'og:description', descriptionText),
+      setMetaTag('property', 'og:image', ogImg),
+      setMetaTag('property', 'og:image:alt', `${product.name} — Designer Luxury Ensemble`),
+      setMetaTag('property', 'og:url', shareUrl),
+      setMetaTag('property', 'og:price:amount', String(product.retailPrice)),
+      setMetaTag('property', 'og:price:currency', 'PKR'),
+      setMetaTag('property', 'product:price:amount', String(product.retailPrice)),
+      setMetaTag('property', 'product:price:currency', 'PKR'),
+      setMetaTag('name', 'twitter:card', 'summary_large_image'),
+      setMetaTag('name', 'twitter:title', productTitle),
+      setMetaTag('name', 'twitter:description', descriptionText),
+      setMetaTag('name', 'twitter:image', ogImg),
+    ];
+
+    // Schema.org Product JSON-LD structured data
+    let scriptTag = document.getElementById('product-schema-jsonld') as HTMLScriptElement | null;
+    if (!scriptTag) {
+      scriptTag = document.createElement('script');
+      scriptTag.id = 'product-schema-jsonld';
+      scriptTag.type = 'application/ld+json';
+      document.head.appendChild(scriptTag);
+    }
+    const schemaData = {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: product.name,
+      image: [ogImg],
+      description: descriptionText,
+      sku: product.sku || product._id,
+      brand: {
+        '@type': 'Brand',
+        name: product.brand || 'MaNHSaaN clothing',
+      },
+      offers: {
+        '@type': 'Offer',
+        url: shareUrl,
+        priceCurrency: 'PKR',
+        price: product.retailPrice,
+        priceValidUntil: '2026-12-31',
+        itemCondition: 'https://schema.org/NewCondition',
+        availability:
+          product.stock > 0 && product.stockState !== 'out_of_stock'
+            ? 'https://schema.org/InStock'
+            : 'https://schema.org/OutOfStock',
+        seller: {
+          '@type': 'Organization',
+          name: 'MaNHSaaN clothing',
+        },
+      },
+    };
+    scriptTag.textContent = JSON.stringify(schemaData);
+
+    return () => {
+      document.title = originalTitle;
+      try {
+        window.history.pushState(null, '', window.location.pathname);
+      } catch {}
+      cleanupMeta.forEach(({ tag, prevContent, wasCreated }) => {
+        if (wasCreated) {
+          tag.remove();
+        } else {
+          tag.setAttribute('content', prevContent);
+        }
+      });
+      const existingScript = document.getElementById('product-schema-jsonld');
+      if (existingScript) existingScript.remove();
     };
   }, [product]);
 
@@ -652,17 +775,62 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
                     </motion.button>
                   </div>
 
-                  {/* Reassurances */}
-                  <div className="flex items-center justify-between text-[11px] text-stone-500 pt-1">
-                    <div className="flex items-center gap-1">
-                      <Truck className="w-3.5 h-3.5 text-stone-700 shrink-0" />
-                      <span>Express Courier COD</span>
+                    {/* Reassurances & Social Share */}
+                    <div className="flex items-center justify-between text-[11px] text-stone-500 pt-1">
+                      <div className="flex items-center gap-1">
+                        <Truck className="w-3.5 h-3.5 text-stone-700 shrink-0" />
+                        <span>Express Courier COD</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <RefreshCw className="w-3.5 h-3.5 text-stone-700 shrink-0" />
+                        <span>7-Day Returns</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <RefreshCw className="w-3.5 h-3.5 text-stone-700 shrink-0" />
-                      <span>7-Day Returns</span>
+
+                    {/* Social Media Share & OpenGraph Link Preview */}
+                    <div className="pt-2 border-t border-stone-100 flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-semibold text-stone-600 flex items-center gap-1.5">
+                        <Share2 className="w-3.5 h-3.5 text-stone-400" />
+                        <span>Share Dress:</span>
+                      </span>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const cleanSlug = product.slug || product._id;
+                            const shareUrl = `${window.location.origin}/?product=${encodeURIComponent(cleanSlug)}`;
+                            if (navigator.clipboard) {
+                              navigator.clipboard.writeText(shareUrl);
+                              setCopiedLink(true);
+                              setTimeout(() => setCopiedLink(false), 2000);
+                            }
+                          }}
+                          className="px-2.5 py-1 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+                          title="Copy direct product link"
+                        >
+                          {copiedLink ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-stone-500" />}
+                          <span>{copiedLink ? 'Link Copied!' : 'Copy Link'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const cleanSlug = product.slug || product._id;
+                            const shareUrl = `${window.location.origin}/?product=${encodeURIComponent(cleanSlug)}`;
+                            const text = encodeURIComponent(
+                              `As-salamu alaykum! Check out this designer dress on MaNHSaaN clothing: "${product.name}" for Rs. ${product.retailPrice.toLocaleString()} with Cash on Delivery nationwide.\n\nView here: ${shareUrl}`
+                            );
+                            window.open(`https://wa.me/?text=${text}`, '_blank');
+                          }}
+                          className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+                          title="Share on WhatsApp"
+                        >
+                          <MessageCircle className="w-3 h-3 text-emerald-600" />
+                          <span>WhatsApp</span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
                 </div>
               </div>
             </div>

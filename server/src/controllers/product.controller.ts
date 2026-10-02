@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import { store } from '../db/store.js';
 import { ProductModel } from '../models/index.js';
 import { AuditService } from '../services/audit.service.js';
@@ -21,8 +22,6 @@ export class ProductController {
    * Public Product Catalog Browse / Search / Filter
    */
   public static async getPublicProducts(req: Request, res: Response): Promise<void> {
-    let items = store.products.filter((p) => p.status === 'active');
-
     const {
       category,
       subcategory,
@@ -36,14 +35,134 @@ export class ProductController {
       newArrival,
       sale,
       sort,
+      tags,
     } = req.query;
 
-    if (category) {
+    const pageParam = req.query.page ? Math.max(1, parseInt(String(req.query.page), 10)) : undefined;
+    const isFetchAll = req.query.limit === 'all' || req.query.limit === '-1';
+    const limitNum = isFetchAll
+      ? undefined
+      : req.query.limit !== undefined
+      ? Math.max(1, Math.min(100, parseInt(String(req.query.limit), 10)))
+      : 8;
+
+    const skipNum = isFetchAll
+      ? 0
+      : req.query.skip !== undefined
+      ? Math.max(0, parseInt(String(req.query.skip), 10))
+      : pageParam && limitNum
+      ? (pageParam - 1) * limitNum
+      : 0;
+
+    // DIRECT MONGODB QUERY VIA INDEXES WHEN ATLAS CONNECTION IS ACTIVE
+    if (mongoose.connection.readyState === 1) {
+      try {
+        const mongoFilter: any = { status: 'active' };
+        if (category && String(category).toLowerCase() !== 'all') {
+          mongoFilter.category = new RegExp(`^${category}$`, 'i');
+        }
+        if (subcategory) {
+          mongoFilter.subcategory = new RegExp(`^${subcategory}$`, 'i');
+        }
+        if (fabric && String(fabric).toLowerCase() !== 'all') {
+          mongoFilter.fabric = new RegExp(String(fabric), 'i');
+        }
+        if (color) {
+          mongoFilter.color = new RegExp(String(color), 'i');
+        }
+        if (size) {
+          mongoFilter.sizes = String(size);
+        }
+        if (featured === 'true') {
+          mongoFilter.featured = true;
+        }
+        if (newArrival === 'true') {
+          mongoFilter.newArrival = true;
+        }
+        if (sale === 'true') {
+          mongoFilter.sale = true;
+        }
+        if (minPrice || maxPrice) {
+          mongoFilter.retailPrice = {};
+          if (minPrice) mongoFilter.retailPrice.$gte = Number(minPrice);
+          if (maxPrice) mongoFilter.retailPrice.$lte = Number(maxPrice);
+        }
+        if (tags) {
+          const tagList = Array.isArray(tags)
+            ? tags.map(String)
+            : String(tags)
+                .split(',')
+                .map((t) => t.trim())
+                .filter(Boolean);
+          if (tagList.length > 0) {
+            mongoFilter.tags = { $in: tagList };
+          }
+        }
+        if (search) {
+          const q = String(search).trim();
+          mongoFilter.$or = [
+            { name: new RegExp(q, 'i') },
+            { sku: new RegExp(q, 'i') },
+            { brand: new RegExp(q, 'i') },
+            { fabric: new RegExp(q, 'i') },
+            { description: new RegExp(q, 'i') },
+            { tags: new RegExp(q, 'i') },
+          ];
+        }
+
+        let sortOption: any = { createdAt: -1 };
+        if (sort === 'price_low_high') sortOption = { retailPrice: 1 };
+        else if (sort === 'price_high_low') sortOption = { retailPrice: -1 };
+        else if (sort === 'popularity') sortOption = { bestSeller: -1, createdAt: -1 };
+
+        const totalCount = await ProductModel.countDocuments(mongoFilter);
+        let query = ProductModel.find(mongoFilter, {
+          wholesaleCost: 0,
+          supplierId: 0,
+          supplierProductCode: 0,
+        }).sort(sortOption);
+
+        if (skipNum > 0) query = query.skip(skipNum);
+        if (limitNum !== undefined) query = query.limit(limitNum);
+
+        const dbProducts = await query.lean();
+
+        res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+        res.json({
+          total: totalCount,
+          skip: skipNum,
+          limit: limitNum || totalCount,
+          page: limitNum ? Math.floor(skipNum / limitNum) + 1 : 1,
+          hasMore: limitNum ? skipNum + dbProducts.length < totalCount : false,
+          products: dbProducts,
+        });
+        return;
+      } catch (dbErr) {
+        console.warn('[ProductController] MongoDB skip/limit query fallback to store:', (dbErr as Error).message);
+      }
+    }
+
+    // FALLBACK TO IN-MEMORY STORE WITH SKIP/LIMIT PAGINATION
+    let items = store.products.filter((p) => p.status === 'active');
+
+    if (category && String(category).toLowerCase() !== 'all') {
       items = items.filter((p) => p.category.toLowerCase() === String(category).toLowerCase());
     }
 
     if (subcategory) {
       items = items.filter((p) => p.subcategory.toLowerCase() === String(subcategory).toLowerCase());
+    }
+
+    if (tags) {
+      const tagList = Array.isArray(tags)
+        ? tags.map(String).map((t) => t.toLowerCase())
+        : String(tags)
+            .split(',')
+            .map((t) => t.trim().toLowerCase())
+            .filter(Boolean);
+      if (tagList.length > 0) {
+        items = items.filter((p) => p.tags?.some((t: string) => tagList.includes(t.toLowerCase())));
+      }
     }
 
     if (search) {
@@ -67,7 +186,7 @@ export class ProductController {
       items = items.filter((p) => p.retailPrice <= Number(maxPrice));
     }
 
-    if (fabric) {
+    if (fabric && String(fabric).toLowerCase() !== 'all') {
       items = items.filter((p) => p.fabric.toLowerCase().includes(String(fabric).toLowerCase()));
     }
 
@@ -108,10 +227,22 @@ export class ProductController {
         break;
     }
 
-    const sanitized = items.map(ProductController.sanitizePublic);
+    const totalCount = items.length;
+    let paginatedItems = items;
+    if (limitNum !== undefined) {
+      paginatedItems = items.slice(skipNum, skipNum + limitNum);
+    } else if (skipNum > 0) {
+      paginatedItems = items.slice(skipNum);
+    }
+
+    const sanitized = paginatedItems.map(ProductController.sanitizePublic);
     res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
     res.json({
-      total: sanitized.length,
+      total: totalCount,
+      skip: skipNum,
+      limit: limitNum || totalCount,
+      page: limitNum ? Math.floor(skipNum / limitNum) + 1 : 1,
+      hasMore: limitNum ? skipNum + paginatedItems.length < totalCount : false,
       products: sanitized,
     });
   }
@@ -121,7 +252,9 @@ export class ProductController {
    */
   public static async getPublicProductBySlug(req: Request, res: Response): Promise<void> {
     const { slug } = req.params;
-    const product = store.products.find((p) => p.slug === slug && p.status !== 'archived');
+    const product = store.products.find(
+      (p) => (p.slug === slug || p._id === slug) && p.status !== 'archived'
+    );
 
     if (!product) {
       res.status(404).json({ error: 'Product not found.' });

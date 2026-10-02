@@ -141,8 +141,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
       >
         {/* Shimmer skeleton placeholder until image has decoded (CLS = 0) */}
         {!imageLoaded && (
-          <div className="absolute inset-0 bg-stone-100 animate-pulse flex items-center justify-center pointer-events-none z-5">
-            <span className="font-serif text-3xl font-light text-stone-300/70 select-none">M</span>
+          <div className="absolute inset-0 bg-stone-200/60 animate-shimmer flex items-center justify-center pointer-events-none z-5">
+            <span className="font-serif text-3xl font-light text-stone-400/60 select-none">M</span>
           </div>
         )}
 
@@ -362,3 +362,66 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
     </motion.div>
   );
 };
+
+/**
+ * Professional luxury skeleton screen component for ProductCard
+ * Used during initial data fetching, pagination, and infinite scroll batch loading
+ */
+export const ProductCardSkeleton: React.FC = () => {
+  return (
+    <div className="flex flex-col bg-white border border-stone-200/90 rounded-2xl sm:rounded-3xl overflow-hidden shadow-xs">
+      {/* Image Skeleton with exact aspect ratio */}
+      <div className="relative aspect-[4/5] sm:aspect-[3/4] w-full bg-stone-100 animate-shimmer overflow-hidden">
+        {/* Top left badge skeleton */}
+        <div className="absolute top-2.5 left-2.5 z-10 flex flex-col gap-1.5">
+          <div className="w-16 h-5 bg-stone-200/80 rounded-full" />
+        </div>
+        {/* Top right wishlist skeleton */}
+        <div className="absolute top-2.5 right-2.5 z-10">
+          <div className="w-8 h-8 rounded-full bg-stone-200/80" />
+        </div>
+        {/* Center luxury watermark */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="font-serif text-3xl sm:text-4xl font-light text-stone-200/80 select-none">M</span>
+        </div>
+        {/* Bottom fabric badge skeleton */}
+        <div className="absolute bottom-2.5 right-2.5 z-10">
+          <div className="w-14 h-4 bg-stone-200/80 rounded-md" />
+        </div>
+      </div>
+
+      {/* Content Details Skeleton */}
+      <div className="p-3.5 sm:p-4 flex flex-col flex-1 justify-between gap-3 animate-shimmer">
+        <div className="space-y-2">
+          {/* Category & Rating */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="h-2.5 w-24 bg-stone-200 rounded" />
+            <div className="h-3.5 w-10 bg-amber-100/70 rounded" />
+          </div>
+
+          {/* Dual-line Title Skeleton */}
+          <div className="space-y-1.5 pt-0.5">
+            <div className="h-3.5 w-4/5 bg-stone-200 rounded" />
+            <div className="h-3.5 w-3/5 bg-stone-200 rounded" />
+          </div>
+
+          {/* Fabric & savings pills */}
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <div className="h-4 w-20 bg-stone-100 rounded-md" />
+            <div className="h-4 w-12 bg-emerald-50 rounded-md" />
+          </div>
+        </div>
+
+        {/* Pricing & Add to Bag */}
+        <div className="pt-2 border-t border-stone-100 space-y-2.5">
+          <div className="flex items-baseline justify-between">
+            <div className="h-5 w-24 bg-stone-200 rounded-md" />
+            <div className="h-3 w-14 bg-stone-100 rounded" />
+          </div>
+          <div className="h-9 w-full bg-stone-200/90 rounded-xl" />
+        </div>
+      </div>
+    </div>
+  );
+};
+

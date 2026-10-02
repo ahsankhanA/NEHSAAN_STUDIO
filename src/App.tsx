@@ -11,7 +11,7 @@ import { CategoryGrid } from './components/store/CategoryGrid';
 import { TestimonialsSlider } from './components/store/TestimonialsSlider';
 import { LoadingScreen } from './components/store/LoadingScreen';
 import { RecentSalesPopup } from './components/store/RecentSalesPopup';
-import { ProductCard } from './components/store/ProductCard';
+import { ProductCard, ProductCardSkeleton } from './components/store/ProductCard';
 import { ProductModal } from './components/store/ProductModal';
 import { CartDrawer } from './components/store/CartDrawer';
 import { WishlistDrawer } from './components/store/WishlistDrawer';
@@ -26,7 +26,7 @@ const ResellerApplyModal = React.lazy(() => import('./components/auth/AuthModals
 const ResellerWorkGuideModal = React.lazy(() => import('./components/reseller/ResellerWorkGuideModal').then((m) => ({ default: m.ResellerWorkGuideModal })));
 import { api } from './services/api';
 import type { IProduct, IOrder, ICategory } from './types';
-import { Filter, Truck, ShieldCheck, Clock } from 'lucide-react';
+import { Filter, Truck, ShieldCheck, Clock, ChevronLeft, ChevronRight, ArrowDown, Sparkles } from 'lucide-react';
 
 const StorefrontContent: React.FC = () => {
   const { user, brandName } = useAuth();
@@ -63,6 +63,20 @@ const StorefrontContent: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFabric, setSelectedFabric] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'price-asc' | 'price-desc' | 'popular'>('newest');
+
+  // Progressive Pagination & Infinite Scroll State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8; // Optimal chunk for mobile and desktop DOM memory performance
+  const [visibleCount, setVisibleCount] = useState(8);
+  const [displayMode, setDisplayMode] = useState<'infinite' | 'paged'>('infinite');
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const observerTarget = React.useRef<HTMLDivElement>(null);
+
+  // Reset pagination counters whenever filters or search change
+  useEffect(() => {
+    setVisibleCount(8);
+    setCurrentPage(1);
+  }, [activeCategory, searchQuery, selectedFabric, sortBy]);
 
   // Modals & Active Views
   const [selectedProduct, setSelectedProduct] = useState<IProduct | null>(null);
@@ -152,6 +166,71 @@ const StorefrontContent: React.FC = () => {
   useEffect(() => {
     fetchProducts();
   }, [activeCategory, searchQuery, selectedFabric, sortBy]);
+
+  // Deep Link / Social Share Handler: Automatically opens ProductModal when ?product=<slug_or_id> is present
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const productParam = params.get('product');
+    if (!productParam) return;
+
+    // Check if the product is already in the loaded products list
+    const existing = products.find(
+      (p) => p.slug === productParam || p._id === productParam
+    );
+    if (existing) {
+      setSelectedProduct(existing);
+      return;
+    }
+
+    // If not found in current list (or loaded during direct link share), fetch via API
+    api
+      .getPublicProductBySlug(productParam)
+      .then((res) => {
+        if (res && res.product) {
+          setSelectedProduct(res.product);
+        }
+      })
+      .catch(() => {});
+  }, [products]);
+
+  // Infinite Scroll IntersectionObserver
+  useEffect(() => {
+    if (displayMode !== 'infinite') return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0]?.isIntersecting &&
+          visibleCount < products.length &&
+          !isLoadingMore &&
+          !loading
+        ) {
+          setIsLoadingMore(true);
+          setTimeout(() => {
+            setVisibleCount((prev) => Math.min(prev + 8, products.length));
+            setIsLoadingMore(false);
+          }, 350);
+        }
+      },
+      { threshold: 0.1, rootMargin: '250px' }
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+    return () => {
+      if (currentTarget) observer.unobserve(currentTarget);
+      observer.disconnect();
+    };
+  }, [displayMode, visibleCount, products.length, isLoadingMore, loading]);
+
+  // Computed products for display
+  const displayedProducts =
+    displayMode === 'infinite'
+      ? products.slice(0, visibleCount)
+      : products.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const totalPages = Math.ceil(products.length / itemsPerPage);
 
   const handleSelectCategory = (category: string, subcategory?: string) => {
     setShowTrackView(false);
@@ -326,15 +405,26 @@ const StorefrontContent: React.FC = () => {
               </div>
             </div>
 
-            {/* Products Grid */}
+            {/* Products Grid & Progressive Loading */}
             <div className="max-w-7xl mx-auto px-3 sm:px-4">
               {loading ? (
-                <div className="text-center py-20 space-y-3">
-                  <div className="w-8 h-8 border-4 border-stone-900 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                  <p className="text-xs text-stone-500 font-medium">Loading collection...</p>
+                /* Professional Skeleton Screen Grid during Initial Data Fetching */
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between text-xs text-stone-500 px-1">
+                    <span className="font-semibold text-stone-700 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-spin" />
+                      Loading artisanal luxury collection...
+                    </span>
+                    <span className="text-[11px] text-stone-400">Core Web Vitals Optimized</span>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-6">
+                    {Array.from({ length: 8 }).map((_, idx) => (
+                      <ProductCardSkeleton key={`loading-skeleton-${idx}`} />
+                    ))}
+                  </div>
                 </div>
               ) : products.length === 0 ? (
-                <div className="text-center py-20 bg-white rounded-xl border border-stone-200 p-8 space-y-3">
+                <div className="text-center py-20 bg-white rounded-xl border border-stone-200 p-8 space-y-3 shadow-xs">
                   <h3 className="font-serif text-lg font-bold text-stone-800">No matching designs found</h3>
                   <p className="text-xs text-stone-500 max-w-sm mx-auto">
                     Try adjusting your search keywords, clearing fabric filters, or viewing all collections.
@@ -345,20 +435,161 @@ const StorefrontContent: React.FC = () => {
                       setSelectedFabric('all');
                       setActiveCategory('all');
                     }}
-                    className="mt-2 px-4 py-2 bg-stone-900 text-white text-xs font-semibold rounded-lg hover:bg-stone-800 transition-colors"
+                    className="mt-2 px-4 py-2 bg-stone-900 text-white text-xs font-semibold rounded-lg hover:bg-stone-800 transition-colors cursor-pointer"
                   >
                     Reset All Filters
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-6">
-                  {products.map((product) => (
-                    <ProductCard
-                      key={product._id}
-                      product={product}
-                      onSelect={(p) => setSelectedProduct(p)}
-                    />
-                  ))}
+                <div className="space-y-6 sm:space-y-8">
+                  {/* Active Products Grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-6">
+                    {displayedProducts.map((product) => (
+                      <ProductCard
+                        key={product._id}
+                        product={product}
+                        onSelect={(p) => setSelectedProduct(p)}
+                      />
+                    ))}
+
+                    {/* Shimmer skeleton screens when loading more batch in infinite scroll */}
+                    {isLoadingMore &&
+                      Array.from({ length: Math.min(4, products.length - visibleCount) }).map((_, idx) => (
+                        <ProductCardSkeleton key={`more-skeleton-${idx}`} />
+                      ))}
+                  </div>
+
+                  {/* Infinite Scroll Sentinel */}
+                  {displayMode === 'infinite' && visibleCount < products.length && (
+                    <div ref={observerTarget} className="h-4 w-full pointer-events-none" />
+                  )}
+
+                  {/* Pagination & Infinite Scroll Controls */}
+                  <div className="pt-4 border-t border-stone-200/80 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    {/* Progress Indicator */}
+                    <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 text-xs text-stone-600 text-center sm:text-left w-full sm:w-auto">
+                      <span className="font-semibold text-stone-900">
+                        {displayMode === 'infinite'
+                          ? `Showing ${Math.min(visibleCount, products.length)} of ${products.length} Designs`
+                          : `Showing ${(currentPage - 1) * itemsPerPage + 1} - ${Math.min(currentPage * itemsPerPage, products.length)} of ${products.length} Designs`}
+                      </span>
+                      {/* Visual Progress Bar */}
+                      <div className="w-48 sm:w-36 h-1.5 bg-stone-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-amber-500 rounded-full transition-all duration-300"
+                          style={{
+                            width: `${
+                              displayMode === 'infinite'
+                                ? (Math.min(visibleCount, products.length) / products.length) * 100
+                                : (Math.min(currentPage * itemsPerPage, products.length) / products.length) * 100
+                            }%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Actions: Load More Button (Infinite mode) OR Numbered Page Buttons (Paged mode) */}
+                    {displayMode === 'infinite' ? (
+                      <div className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-end">
+                        {visibleCount < products.length ? (
+                          <button
+                            onClick={() => {
+                              setIsLoadingMore(true);
+                              setTimeout(() => {
+                                setVisibleCount((prev) => Math.min(prev + 8, products.length));
+                                setIsLoadingMore(false);
+                              }, 300);
+                            }}
+                            disabled={isLoadingMore}
+                            className="w-full sm:w-auto px-6 py-2.5 bg-stone-900 hover:bg-stone-800 text-stone-50 rounded-full text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+                          >
+                            {isLoadingMore ? (
+                              <>
+                                <div className="w-3.5 h-3.5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                                <span>Loading more designs...</span>
+                              </>
+                            ) : (
+                              <>
+                                <ArrowDown className="w-3.5 h-3.5 text-amber-400" />
+                                <span>Load More (+{Math.min(8, products.length - visibleCount)} Designs)</span>
+                              </>
+                            )}
+                          </button>
+                        ) : (
+                          <span className="text-xs text-stone-400 font-medium">
+                            ✓ All {products.length} exclusive designs loaded
+                          </span>
+                        )}
+
+                        {/* Switch to Numbered Pages */}
+                        <button
+                          onClick={() => setDisplayMode('paged')}
+                          className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-full text-xs font-semibold transition-colors shrink-0 cursor-pointer"
+                          title="Switch to numbered pages"
+                        >
+                          Use Pages
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
+                        {/* Previous Page */}
+                        <button
+                          onClick={() => {
+                            setCurrentPage((p) => Math.max(1, p - 1));
+                            window.scrollTo({ top: 500, behavior: 'smooth' });
+                          }}
+                          disabled={currentPage === 1}
+                          className="p-2 rounded-lg bg-stone-100 text-stone-700 hover:bg-stone-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                          aria-label="Previous Page"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+
+                        {/* Numbered Page Buttons */}
+                        {Array.from({ length: totalPages }).map((_, idx) => {
+                          const pageNumber = idx + 1;
+                          return (
+                            <button
+                              key={pageNumber}
+                              onClick={() => {
+                                setCurrentPage(pageNumber);
+                                window.scrollTo({ top: 500, behavior: 'smooth' });
+                              }}
+                              className={`w-8 h-8 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                currentPage === pageNumber
+                                  ? 'bg-stone-900 text-white shadow-xs'
+                                  : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                              }`}
+                            >
+                              {pageNumber}
+                            </button>
+                          );
+                        })}
+
+                        {/* Next Page */}
+                        <button
+                          onClick={() => {
+                            setCurrentPage((p) => Math.min(totalPages, p + 1));
+                            window.scrollTo({ top: 500, behavior: 'smooth' });
+                          }}
+                          disabled={currentPage === totalPages}
+                          className="p-2 rounded-lg bg-stone-100 text-stone-700 hover:bg-stone-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                          aria-label="Next Page"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+
+                        {/* Switch to Infinite Scroll */}
+                        <button
+                          onClick={() => setDisplayMode('infinite')}
+                          className="ml-2 px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-full text-xs font-semibold transition-colors shrink-0 cursor-pointer"
+                          title="Switch to continuous scroll"
+                        >
+                          Infinite Scroll
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
