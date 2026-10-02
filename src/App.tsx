@@ -34,11 +34,29 @@ const StorefrontContent: React.FC = () => {
   const { toastMessage } = useWishlist();
   const [currentView, setCurrentView] = useState<'store' | 'reseller' | 'admin'>('store');
 
-  // Products & Categories state
-  const [products, setProducts] = useState<IProduct[]>([]);
-  const [categories, setCategories] = useState<ICategory[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [initialAppLoading, setInitialAppLoading] = useState(true);
+  // Products & Categories state with instant local Stale-While-Revalidate caching
+  const [products, setProducts] = useState<IProduct[]>(() => {
+    try {
+      const cached = localStorage.getItem('manhsaan_products_cache_v1');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return [];
+  });
+  const [categories, setCategories] = useState<ICategory[]>(() => {
+    try {
+      const cached = localStorage.getItem('manhsaan_categories_cache_v1');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return [];
+  });
+  const [loading, setLoading] = useState(false);
+  const [initialAppLoading, setInitialAppLoading] = useState(false);
 
   // Filters
   const [activeCategory, setActiveCategory] = useState('all');
@@ -65,6 +83,9 @@ const StorefrontContent: React.FC = () => {
       const res = await api.getCategories();
       if (res.categories && res.categories.length > 0) {
         setCategories(res.categories);
+        try {
+          localStorage.setItem('manhsaan_categories_cache_v1', JSON.stringify(res.categories));
+        } catch {}
       }
     } catch (err) {
       console.error('Failed to load categories:', err);
@@ -74,7 +95,7 @@ const StorefrontContent: React.FC = () => {
   // Load public products
   const fetchProducts = async () => {
     try {
-      setLoading(true);
+      if (products.length === 0) setLoading(true);
       const params: Record<string, any> = {};
       if (activeCategory !== 'all' && activeCategory !== 'sale') {
         const parts = activeCategory.split('-');
@@ -111,6 +132,12 @@ const StorefrontContent: React.FC = () => {
       }
 
       setProducts(list);
+      // Cache the default catalog view for instant future loads
+      if (activeCategory === 'all' && !searchQuery.trim() && selectedFabric === 'all') {
+        try {
+          localStorage.setItem('manhsaan_products_cache_v1', JSON.stringify(list));
+        } catch {}
+      }
     } catch (err) {
       console.error('Failed to load products:', err);
     } finally {
@@ -120,10 +147,6 @@ const StorefrontContent: React.FC = () => {
 
   useEffect(() => {
     fetchCategories();
-    const timer = setTimeout(() => {
-      setInitialAppLoading(false);
-    }, 1100);
-    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {

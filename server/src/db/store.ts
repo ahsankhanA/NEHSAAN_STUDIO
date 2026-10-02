@@ -10,6 +10,7 @@ import {
   SettingsModel,
   CustomerModel,
 } from '../models/index.js';
+import { ImageOptimizationService } from '../services/image-optimization.service.js';
 import type {
   IUser,
   IReseller,
@@ -166,10 +167,37 @@ class MemoryDataStore {
       }
 
       console.log(`[Store] MongoDB Cloud Sync COMPLETE: ${this.products.length} Products, ${this.orders.length} Orders, ${this.resellers.length} Resellers.`);
+      // Run background WebP optimization on any existing raw base64 images to accelerate catalog delivery
+      this.optimizeExistingProductImagesInBackground().catch(() => {});
       return true;
     } catch (err) {
       console.warn('[Store] Cloud database sync error:', (err as Error).message);
       return false;
+    }
+  }
+
+  public async optimizeExistingProductImagesInBackground(): Promise<void> {
+    try {
+      let optimizedCount = 0;
+      for (const product of this.products) {
+        if (
+          Array.isArray(product.images) &&
+          product.images.some(
+            (img) => typeof img === 'string' && img.startsWith('data:image') && !img.startsWith('data:image/webp')
+          )
+        ) {
+          product.images = await ImageOptimizationService.optimizeProductImageList(product.images, 1080, 80);
+          optimizedCount++;
+          if (mongoose.connection.readyState === 1) {
+            ProductModel.updateOne({ _id: product._id }, { $set: { images: product.images } }).catch(() => {});
+          }
+        }
+      }
+      if (optimizedCount > 0) {
+        console.log(`[Store] Compressed ${optimizedCount} products with heavy images to lightweight WebP in background.`);
+      }
+    } catch (err) {
+      console.warn('[Store] Background image optimization notice:', (err as Error).message);
     }
   }
 

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ChevronRight, Sparkles, ArrowRight, ShieldCheck } from 'lucide-react';
 import type { IHeroSlide } from '../../types';
 import { api } from '../../services/api';
+import { getOptimizedImageUrl, getImageSrcSet, IMAGE_SIZES } from '../../utils/imageOptimizer';
 
 const DEFAULT_SLIDES: IHeroSlide[] = [
   {
@@ -133,17 +134,33 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({ onSelectCategory }) 
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.7, ease: 'easeInOut' }}
-          className="absolute inset-0 z-0"
+          className="absolute inset-0 z-0 overflow-hidden"
         >
-          {/* Background image with subtle zoom effect */}
-          <div
-            className="absolute inset-0 bg-cover bg-center transition-transform duration-10000 ease-out transform scale-105"
-            style={{ backgroundImage: `url('${slide.image}')` }}
-          />
+          {/* Responsive WebP Hero Image with Core Web Vitals optimization */}
+          <picture className="absolute inset-0 block w-full h-full">
+            {getImageSrcSet(slide.image, [640, 1024, 1440, 1920], 85) && (
+              <source
+                type="image/webp"
+                srcSet={getImageSrcSet(slide.image, [640, 1024, 1440, 1920], 85)}
+                sizes={IMAGE_SIZES.heroBanner}
+              />
+            )}
+            <img
+              src={getOptimizedImageUrl(slide.image, 1600, 85, 'webp')}
+              srcSet={getImageSrcSet(slide.image, [640, 1024, 1440, 1920], 85)}
+              sizes={IMAGE_SIZES.heroBanner}
+              alt={slide.title}
+              className="w-full h-full object-cover object-center transition-transform duration-10000 ease-out transform scale-105"
+              loading={safeCurrent === 0 ? 'eager' : 'lazy'}
+              fetchPriority={safeCurrent === 0 ? 'high' : 'auto'}
+              decoding={safeCurrent === 0 ? 'sync' : 'async'}
+            />
+          </picture>
+
           {/* Multi-layered luxury vignette overlays */}
-          <div className="absolute inset-0 bg-gradient-to-r from-stone-950 via-stone-950/85 to-stone-900/40" />
-          <div className="absolute inset-0 bg-radial-at-c from-transparent via-stone-950/30 to-stone-950/80" />
-          <div className="absolute inset-0 bg-[radial-gradient(#d97706_1px,transparent_1px)] [background-size:24px_24px] opacity-10" />
+          <div className="absolute inset-0 bg-gradient-to-r from-stone-950 via-stone-950/85 to-stone-900/40 pointer-events-none" />
+          <div className="absolute inset-0 bg-radial-at-c from-transparent via-stone-950/30 to-stone-950/80 pointer-events-none" />
+          <div className="absolute inset-0 bg-[radial-gradient(#d97706_1px,transparent_1px)] [background-size:24px_24px] opacity-10 pointer-events-none" />
         </motion.div>
       </AnimatePresence>
 

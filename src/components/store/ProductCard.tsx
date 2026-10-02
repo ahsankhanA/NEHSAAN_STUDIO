@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import type { IProduct } from '../../types';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
+import { getOptimizedImageUrl, getImageSrcSet, IMAGE_SIZES } from '../../utils/imageOptimizer';
 
 interface ProductCardProps {
   product: IProduct;
@@ -15,6 +16,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
   const { isInWishlist, toggleWishlist } = useWishlist();
   const [justAdded, setJustAdded] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   const isSaved = isInWishlist(product._id);
   const isOutOfStock = product.stock <= 0 || product.stockState === 'out_of_stock';
@@ -36,6 +39,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
 
   const currentDisplayImage = imagesList[activeImageIndex] || imagesList[0];
   const secondaryImage = imagesList[1] || null;
+
+  // Optimized WebP image formats with responsive srcset
+  const primaryWebpSrc = getOptimizedImageUrl(currentDisplayImage, 800, 80, 'webp');
+  const primarySrcSet = getImageSrcSet(currentDisplayImage, [360, 480, 720, 960], 80);
+  const secondaryWebpSrc = secondaryImage ? getOptimizedImageUrl(secondaryImage, 800, 80, 'webp') : null;
+  const secondarySrcSet = secondaryImage ? getImageSrcSet(secondaryImage, [360, 480, 720, 960], 80) : undefined;
 
   const isUnstitched =
     String(product.subcategory || '').toLowerCase() === 'unstitched' ||
@@ -65,6 +74,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -6 }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       transition={{ duration: 0.28, ease: 'easeOut' }}
       className="group relative flex flex-col bg-white border border-stone-200/90 rounded-2xl sm:rounded-3xl overflow-hidden hover:shadow-[0_20px_45px_-12px_rgba(180,83,9,0.18)] hover:border-amber-400/70 transition-all duration-300"
     >
@@ -128,22 +139,56 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
         onClick={() => onSelect(product)}
         className="relative aspect-[4/5] sm:aspect-[3/4] w-full bg-stone-100 overflow-hidden cursor-pointer select-none"
       >
-        {/* Full Edge-to-Edge Image with object-top: Model's head and dress neckline are always preserved */}
-        <img
-          src={currentDisplayImage}
-          alt={product.name}
-          className="w-full h-full object-cover object-top transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-          loading="lazy"
-        />
+        {/* Shimmer skeleton placeholder until image has decoded (CLS = 0) */}
+        {!imageLoaded && (
+          <div className="absolute inset-0 bg-stone-100 animate-pulse flex items-center justify-center pointer-events-none z-5">
+            <span className="font-serif text-3xl font-light text-stone-300/70 select-none">M</span>
+          </div>
+        )}
 
-        {/* Secondary Hover Image Swap on Desktop (If user has not manually clicked another dot) */}
-        {secondaryImage && activeImageIndex === 0 && (
+        {/* Full Edge-to-Edge WebP Responsive Picture */}
+        <picture className="block w-full h-full">
+          {primarySrcSet && (
+            <source
+              type="image/webp"
+              srcSet={primarySrcSet}
+              sizes={IMAGE_SIZES.productCard}
+            />
+          )}
           <img
-            src={secondaryImage}
-            alt={`${product.name} alternate view`}
-            className="hidden sm:block absolute inset-0 w-full h-full object-cover object-top opacity-0 group-hover:opacity-100 group-hover:scale-[1.04] transition-all duration-700 ease-out pointer-events-none"
+            src={primaryWebpSrc}
+            srcSet={primarySrcSet}
+            sizes={IMAGE_SIZES.productCard}
+            alt={product.name}
+            className={`w-full h-full object-cover object-top transition-all duration-700 ease-out group-hover:scale-[1.04] ${
+              imageLoaded ? 'opacity-100' : 'opacity-0'
+            }`}
             loading="lazy"
+            decoding="async"
+            onLoad={() => setImageLoaded(true)}
           />
+        </picture>
+
+        {/* Secondary Hover Image Swap on Desktop: Only mounted when card is hovered to save 50% initial bandwidth */}
+        {secondaryImage && activeImageIndex === 0 && isHovered && (
+          <picture className="hidden sm:block absolute inset-0 w-full h-full pointer-events-none">
+            {secondarySrcSet && (
+              <source
+                type="image/webp"
+                srcSet={secondarySrcSet}
+                sizes={IMAGE_SIZES.productCard}
+              />
+            )}
+            <img
+              src={secondaryWebpSrc || secondaryImage}
+              srcSet={secondarySrcSet}
+              sizes={IMAGE_SIZES.productCard}
+              alt={`${product.name} alternate view`}
+              className="w-full h-full object-cover object-top opacity-0 group-hover:opacity-100 group-hover:scale-[1.04] transition-all duration-700 ease-out"
+              loading="lazy"
+              decoding="async"
+            />
+          </picture>
         )}
 
         {/* Subtle Bottom Shadow Vignette (blends photo gracefully into card info) */}

@@ -106,6 +106,12 @@ const ProductSchema = new Schema<IProduct>({
   seoDescription: { type: String },
 }, { timestamps: true });
 
+// Compound indexes for rapid catalog queries and high-concurrency sorting
+ProductSchema.index({ status: 1, createdAt: -1 });
+ProductSchema.index({ status: 1, category: 1 });
+ProductSchema.index({ status: 1, subcategory: 1 });
+ProductSchema.index({ status: 1, retailPrice: 1 });
+
 // Supplier Schema
 const SupplierSchema = new Schema<ISupplier>({
   _id: { type: String, required: true },

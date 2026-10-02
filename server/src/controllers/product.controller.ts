@@ -4,6 +4,7 @@ import { ProductModel } from '../models/index.js';
 import { AuditService } from '../services/audit.service.js';
 import { ProductAlertService } from '../services/product-alert.service.js';
 import { ProductStockCleanupService } from '../services/product-stock-cleanup.service.js';
+import { ImageOptimizationService } from '../services/image-optimization.service.js';
 import type { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import type { IProduct } from '../../src/types/index.js';
 
@@ -108,6 +109,7 @@ export class ProductController {
     }
 
     const sanitized = items.map(ProductController.sanitizePublic);
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
     res.json({
       total: sanitized.length,
       products: sanitized,
@@ -131,6 +133,7 @@ export class ProductController {
       .slice(0, 4)
       .map(ProductController.sanitizePublic);
 
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
     res.json({
       product: ProductController.sanitizePublic(product),
       related,
@@ -223,6 +226,14 @@ export class ProductController {
         : ['Small', 'Medium', 'Large'];
     }
 
+    // Compress and convert any uploaded base64 images to lightweight WebP
+    let finalImages = Array.isArray(images) && images.length > 0 ? images : [
+      'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1000&q=80'
+    ];
+    if (finalImages.some((img: string) => typeof img === 'string' && img.startsWith('data:image'))) {
+      finalImages = await ImageOptimizationService.optimizeProductImageList(finalImages, 1080, 80);
+    }
+
     const newProduct: IProduct = {
       _id: store.generateId(),
       name: name.trim(),
@@ -236,9 +247,7 @@ export class ProductController {
       retailPrice: Number(retailPrice),
       compareAtPrice: compareAtPrice ? Number(compareAtPrice) : undefined,
       wholesaleCost: Number(wholesaleCost),
-      images: Array.isArray(images) && images.length > 0 ? images : [
-        'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1000&q=80'
-      ],
+      images: finalImages,
       color: color || 'Multi',
       fabric: fabric || 'Cotton Lawn',
       sizes: finalSizes,
@@ -302,6 +311,12 @@ export class ProductController {
     }
 
     const updates = req.body;
+
+    // Optimize any updated base64 images
+    if (Array.isArray(updates.images) && updates.images.some((img: string) => typeof img === 'string' && img.startsWith('data:image'))) {
+      updates.images = await ImageOptimizationService.optimizeProductImageList(updates.images, 1080, 80);
+    }
+
     Object.assign(product, updates);
     product.updatedAt = new Date().toISOString();
 

@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'path';
 import cors from 'cors';
+import compression from 'compression';
 import { createServer as createViteServer } from 'vite';
 import { ENV } from './server/src/config/env.js';
 import { connectDatabase } from './server/src/config/db.js';
@@ -14,7 +15,11 @@ async function startServer() {
   const app = express();
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
-  // Global Middlewares
+  // Global Middlewares (High performance gzip/deflate compression)
+  app.use(compression({
+    level: 6,
+    threshold: 1024,
+  }));
   app.use(cors({ origin: true, credentials: true }));
   app.use(express.json({ limit: '15mb' }));
   app.use(express.urlencoded({ extended: true, limit: '15mb' }));
